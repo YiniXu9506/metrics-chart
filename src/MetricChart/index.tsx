@@ -1,8 +1,20 @@
-import React, { useRef, useState } from "react"
+import React, { useRef, useState, useContext } from "react"
+
+import {
+  Chart,
+  Settings,
+  Position,
+  Axis,
+  ScaleType,
+  LineSeries,
+  BrushEvent,
+} from "@elastic/charts"
+import { AxiosPromise } from "axios"
+import { getValueFormat } from "@baurine/grafana-value-formats"
+
 import {
   TimeRangeValue,
   IQueryOption,
-  GraphType,
   TransformNullValue,
   MetricsQueryResponse,
   QueryOptions,
@@ -13,11 +25,6 @@ import {
   PromMatrixData,
   resolveQueryTemplate,
 } from "../utils/prometheus"
-import { AxiosPromise } from "axios"
-import { Chart, Settings, Position, Axis } from "@elastic/charts"
-
-import { getValueFormat } from "@baurine/grafana-value-formats"
-
 import {
   alignRange,
   DEFAULT_CHART_SETTINGS,
@@ -26,18 +33,19 @@ import {
 } from "../utils/charts"
 
 import { useChange } from "../utils/useChange"
-
 import { renderQueryData } from "./seriesRenderer"
+import { ChartContext } from "./ChartContext"
 
 export interface IMetricChartProps {
   queries: IQueryOption[]
   range: TimeRangeValue
   unit?: string
-  type: GraphType
   nullValue?: TransformNullValue
   height?: number
+  onError?: (err: Error | null) => void
+  onLoading?: (isLoading: boolean) => void
   onBrush?: (newRange: TimeRangeValue) => void
-  onError: (err: Error | null) => void
+  onClickSeriesLabel?: (seriesName: string) => void
   fetchPromeData: (params: {
     endTimeSec: number
     query: string
@@ -57,17 +65,20 @@ const MetricsChart = ({
   queries,
   range,
   unit,
-  type,
   nullValue = TransformNullValue.NULL,
   height = 200,
   onBrush,
   onError,
+  onLoading,
   fetchPromeData,
+  onClickSeriesLabel,
 }: IMetricChartProps) => {
   const chartRef = useRef<Chart>(null)
   const chartContainerRef = useRef<HTMLDivElement>(null)
   const [chartHandle] = useChartHandle(chartContainerRef, 150)
   const [data, setData] = useState<Data | null>(null)
+  const ee = useContext(ChartContext)
+  ee.useSubscription((e) => chartRef.current?.dispatchExternalPointerEvent(e))
 
   useChange(() => {
     const interval = chartHandle.calcIntervalSec(range)
@@ -101,20 +112,22 @@ const MetricsChart = ({
           }
         }
         fillInto[fillIdx] = data
+        onError?.(null)
       } catch (e) {
         fillInto[fillIdx] = null
-        onError(e)
+        onError?.(e)
       }
     }
 
     async function queryAllMetrics() {
+      onLoading?.(true)
       const dataSets: (PromMatrixData | null)[] = []
       try {
         await Promise.all(
           queries.map((q, idx) => queryMetric(q.promql, idx, dataSets))
         )
       } finally {
-        // setLoading(false);
+        onLoading?.(false)
       }
 
       // Transform response into data
@@ -143,13 +156,14 @@ const MetricsChart = ({
 
           const d: QueryData = {
             id: `${queryIdx}_${seriesIdx}`,
-            name: format(queries[queryIdx].name, promResult.metric),
+            name:
+              Object.keys(promResult.metric).length === 0
+                ? queries[queryIdx].name
+                : Object.values(promResult.metric)[0],
             data: transformedData,
             type: queries[queryIdx].type,
+            color: queries[queryIdx].color,
           }
-          const colorOrFn = queries[queryIdx].color
-
-          d.color = typeof colorOrFn === "function" ? colorOrFn(d) : colorOrFn
           sd.push(d)
         })
       })
@@ -164,17 +178,30 @@ const MetricsChart = ({
     queryAllMetrics()
   }, [range])
 
-  let inner = null
+  const hanldeOnBrush = (ev: BrushEvent) => {
+    if (!ev.x) {
+      return
+    }
+    onBrush([ev.x[0] as number, ev.x[1] as number])
+  }
 
-  inner = (
-    <>
+  const handleLegendItemClick = (e) => {
+    const seriesName = e[0].specId
+    onClickSeriesLabel!(seriesName)
+  }
+
+  return (
+    <div ref={chartContainerRef}>
       <Chart size={{ height }} ref={chartRef}>
         <Settings
           {...DEFAULT_CHART_SETTINGS}
           legendPosition={Position.Right}
           legendSize={130}
           pointerUpdateDebounce={0}
+          onPointerUpdate={(e) => ee.emit(e)}
           xDomain={{ min: range[0] * 1000, max: range[1] * 1000 }}
+          onBrushEnd={hanldeOnBrush}
+          onLegendItemClick={handleLegendItemClick}
         />
         <Axis
           id="bottom"
@@ -191,12 +218,24 @@ const MetricsChart = ({
           }
           ticks={5}
         />
-        {data?.values.map((qd) => renderQueryData(type, qd))}
+        {data?.values.map((qd) => renderQueryData(qd))}
+        {data && (
+          <LineSeries // An empty series to avoid "no data" notice
+            id="_placeholder"
+            xScaleType={ScaleType.Time}
+            yScaleType={ScaleType.Linear}
+            xAccessor={0}
+            yAccessors={[1]}
+            hideInLegend
+            data={[
+              [data.meta.queryOptions.start * 1000, 0],
+              [data.meta.queryOptions.end * 1000, 0],
+            ]}
+          />
+        )}
       </Chart>
-    </>
+    </div>
   )
-
-  return <div ref={chartContainerRef}>{inner}</div>
 }
 
 export default MetricsChart

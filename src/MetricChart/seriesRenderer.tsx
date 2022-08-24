@@ -1,35 +1,13 @@
 import { BarSeries, LineSeries, ScaleType, AreaSeries } from '@elastic/charts'
-import { DataPoint } from '@lib/utils/prometheus'
+import { QueryData } from './types'
 import React from 'react'
 
-export type GraphType = 'bar_stacked' | 'area_stack' | 'line' | 'mixed'
-
-export type QueryData = {
-  id: string
-  name: string
-  data: DataPoint[]
-  color?: string
-  type?: GraphType
-}
-
-export function renderQueryData(type: GraphType, qd: QueryData) {
-  switch (type) {
-    case 'bar_stacked':
-      return renderStackedBar(qd)
-    case 'area_stack':
-      return renderAreaStack(qd)
-    case 'line':
-      return renderLine(qd)
-    case 'mixed':
-      return renderMixed(qd)
-  }
-}
-
-function renderMixed(qd: QueryData) {
+export function renderQueryData(qd: QueryData) {
   return (
     <>
       {qd.type === 'line' && <>{renderLine(qd)}</>}
       {qd.type === 'bar_stacked' && <>{renderStackedBar(qd)}</>}
+      {qd.type === 'area_stack' && <>{renderAreaStack(qd)}</>}
     </>
   )
 }
@@ -46,7 +24,7 @@ function renderStackedBar(qd: QueryData) {
       stackAccessors={[0]}
       data={qd.data}
       name={qd.name}
-      color={qd.color}
+      color={typeof qd.color === "function" ? qd.color(qd.name) : qd.color }
     />
   )
 }
@@ -62,7 +40,7 @@ function renderLine(qd: QueryData) {
       yAccessors={[1]}
       data={qd.data}
       name={qd.name}
-      color={qd.color}
+      color={typeof qd.color === "function" ? qd.color(qd.name) : qd.color }
       lineSeriesStyle={{
         line: {
           strokeWidth: 2
@@ -87,7 +65,7 @@ function renderAreaStack(qd: QueryData) {
       stackAccessors={[0]}
       data={qd.data}
       name={qd.name}
-      color={qd.color}
+      color={typeof qd.color === "function" ? qd.color(qd.name) : qd.color }
     />
   )
 }

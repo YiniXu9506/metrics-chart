@@ -1,4 +1,4 @@
-export type GraphType = "bar_stacked" | "area_stack" | "line" | "mixed";
+export type SeriesType = "bar_stacked" | "area_stack" | "line"
 
 export enum ColorType {
   BLUE_1 = "#C0D8FF",
@@ -31,8 +31,8 @@ export type QueryData = {
   id: string;
   name: string;
   data: DataPoint[];
-  color?: string;
-  type?: GraphType;
+  color?: ColorType | ((seriesName: string) => string | undefined);
+  type?: SeriesType;
 };
 
 export interface QueryOptions {
@@ -45,7 +45,7 @@ export interface IQueryOption {
   promql: string;
   name: string;
   color?: ColorType | ((seriesName: string) => string | undefined);
-  type: GraphType;
+  type: SeriesType;
 }
 
 /**
