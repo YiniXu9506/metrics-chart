@@ -33,7 +33,7 @@
   "scripts": {
     "start": "parcel start",
     "build": "parcel build --no-optimize && npm run build:type",
-    "build:type": "npx -p typescript tsc --module amd --out dist/types.d.ts > /dev/null 2>&1 || true"
+    "build:type": "npx -p typescript tsc --out dist/types.d.ts"
   },
   "eslintConfig": {
     "extends": [

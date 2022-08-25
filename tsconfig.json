@@ -1,7 +1,6 @@
 {
 	"include": [
-		"src/**/*.ts",
-		"src/index.d.ts"
+		"src/**/*",
 	],
 	"compilerOptions": {
 		"baseUrl": "./",
@@ -10,7 +9,10 @@
 		"declaration": true,
 		"emitDeclarationOnly": true,
 		"esModuleInterop": true,
-		"lib": ["es2021", "dom"],
-		"jsx": "react"
-	}
+    	"moduleResolution": "node",
+		"lib": ["esnext", "dom"],
+		"jsx": "react",
+		"target": "esnext"
+	},
+	"exclude": ["node_modules"]
 }
