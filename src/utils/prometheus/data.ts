@@ -4,12 +4,9 @@
 // https://github.com/grafana/grafana/blob/c986aaa0a8e7fb167b9d10304129f6aea85ad45c/public/app/plugins/datasource/prometheus/result_transformer.ts
 
 import { DEFAULT_MIN_INTERVAL_SEC } from '.'
-import {
-  isMatrixData,
-  MatrixOrVectorResult,
-} from './types'
+import { isMatrixData, MatrixOrVectorResult } from './types'
 
-import { DataPoint, QueryOptions} from '../../MetricChart/types'
+import { DataPoint, QueryOptions } from '../../MetricChart/types'
 
 const POSITIVE_INFINITY_SAMPLE_VALUE = '+Inf'
 const NEGATIVE_INFINITY_SAMPLE_VALUE = '-Inf'

@@ -6,7 +6,7 @@ import {
   TooltipSettings,
   TooltipStickTo,
   TooltipType,
-  TooltipValue
+  TooltipValue,
 } from '@elastic/charts'
 import { TimeRangeValue } from '../MetricChart/types'
 import dayjs from 'dayjs'
@@ -43,14 +43,14 @@ function niceTimeFormatByDay(days: number) {
 
 export function timeTooltipFormatter({ value }: TooltipValue): string {
   return timeFormatter('YYYY-MM-DD HH:mm:ss (UTCZ)')(value, {
-    timeZone: tz.getTimeZoneStr()
+    timeZone: tz.getTimeZoneStr(),
   })
 }
 
 export const DEFAULT_TOOLTIP_SETTINGS: TooltipSettings = {
   type: TooltipType.Crosshairs,
   headerFormatter: timeTooltipFormatter,
-  stickTo: TooltipStickTo.MousePosition
+  stickTo: TooltipStickTo.MousePosition,
 }
 
 export const DEFAULT_THEME: PartialTheme = {
@@ -60,29 +60,29 @@ export const DEFAULT_THEME: PartialTheme = {
     gridLine: {
       horizontal: {
         visible: true,
-        dash: [3, 3]
+        dash: [3, 3],
       },
       vertical: {
         visible: true,
-        dash: [3, 3]
-      }
-    }
+        dash: [3, 3],
+      },
+    },
   },
   crosshair: {
     crossLine: {
-      dash: []
+      dash: [],
     },
     line: {
-      dash: []
-    }
-  }
+      dash: [],
+    },
+  },
 }
 
 export const DEFAULT_CHART_SETTINGS: SettingsProps = {
   showLegend: true,
   showLegendExtra: true,
   tooltip: DEFAULT_TOOLTIP_SETTINGS,
-  theme: DEFAULT_THEME
+  theme: DEFAULT_THEME,
 }
 
 export type ChartHandle = {
@@ -122,7 +122,7 @@ export function useChartHandle(
       const roundedInterval =
         Math.floor(interval / minIntervalSec) * minIntervalSec
       return Math.max(minIntervalSec, roundedInterval)
-    }
+    },
   })
   return [chartRef.current]
 }

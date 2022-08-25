@@ -24,7 +24,7 @@ function renderStackedBar(qd: QueryData) {
       stackAccessors={[0]}
       data={qd.data}
       name={qd.name}
-      color={typeof qd.color === "function" ? qd.color(qd.name) : qd.color }
+      color={typeof qd.color === 'function' ? qd.color(qd.name) : qd.color}
     />
   )
 }
@@ -40,14 +40,14 @@ function renderLine(qd: QueryData) {
       yAccessors={[1]}
       data={qd.data}
       name={qd.name}
-      color={typeof qd.color === "function" ? qd.color(qd.name) : qd.color }
+      color={typeof qd.color === 'function' ? qd.color(qd.name) : qd.color}
       lineSeriesStyle={{
         line: {
-          strokeWidth: 2
+          strokeWidth: 2,
         },
         point: {
-          visible: false
-        }
+          visible: false,
+        },
       }}
     />
   )
@@ -65,7 +65,7 @@ function renderAreaStack(qd: QueryData) {
       stackAccessors={[0]}
       data={qd.data}
       name={qd.name}
-      color={typeof qd.color === "function" ? qd.color(qd.name) : qd.color }
+      color={typeof qd.color === 'function' ? qd.color(qd.name) : qd.color}
     />
   )
 }

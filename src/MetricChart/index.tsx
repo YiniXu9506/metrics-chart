@@ -1,4 +1,4 @@
-import React, { useRef, useState, useContext } from "react"
+import React, { useRef, useState, useContext } from 'react'
 
 import {
   Chart,
@@ -8,9 +8,9 @@ import {
   ScaleType,
   LineSeries,
   BrushEvent,
-} from "@elastic/charts"
-import { AxiosPromise } from "axios"
-import { getValueFormat } from "@baurine/grafana-value-formats"
+} from '@elastic/charts'
+import { AxiosPromise } from 'axios'
+import { getValueFormat } from '@baurine/grafana-value-formats'
 
 import {
   TimeRangeValue,
@@ -19,22 +19,22 @@ import {
   MetricsQueryResponse,
   QueryOptions,
   QueryData,
-} from "./types"
+} from './types'
 import {
   processRawData,
   PromMatrixData,
   resolveQueryTemplate,
-} from "../utils/prometheus"
+} from '../utils/prometheus'
 import {
   alignRange,
   DEFAULT_CHART_SETTINGS,
   timeTickFormatter,
   useChartHandle,
-} from "../utils/charts"
+} from '../utils/charts'
 
-import { useChange } from "../utils/useChange"
-import { renderQueryData } from "./seriesRenderer"
-import { ChartContext } from "./ChartContext"
+import { useChange } from '../utils/useChange'
+import { renderQueryData } from './seriesRenderer'
+import { ChartContext } from './ChartContext'
 
 export interface IMetricChartProps {
   queries: IQueryOption[]
@@ -78,7 +78,7 @@ const MetricsChart = ({
   const [chartHandle] = useChartHandle(chartContainerRef, 150)
   const [data, setData] = useState<Data | null>(null)
   const ee = useContext(ChartContext)
-  ee.useSubscription((e) => chartRef.current?.dispatchExternalPointerEvent(e))
+  ee.useSubscription(e => chartRef.current?.dispatchExternalPointerEvent(e))
 
   useChange(() => {
     const interval = chartHandle.calcIntervalSec(range)
@@ -104,9 +104,9 @@ const MetricsChart = ({
       try {
         const resp = await fetchPromeData(pramas)
         let data: PromMatrixData | null = null
-        if (resp.data.status === "success") {
+        if (resp.data.status === 'success') {
           data = resp.data.data as any
-          if (data?.resultType !== "matrix") {
+          if (data?.resultType !== 'matrix') {
             // unsupported
             data = null
           }
@@ -145,7 +145,7 @@ const MetricsChart = ({
           // transform data according to nullValue config
           const transformedData =
             nullValue === TransformNullValue.AS_ZERO
-              ? data.map((d) => {
+              ? data.map(d => {
                   if (d[1] !== null) {
                     return d
                   }
@@ -185,7 +185,7 @@ const MetricsChart = ({
     onBrush([ev.x[0] as number, ev.x[1] as number])
   }
 
-  const handleLegendItemClick = (e) => {
+  const handleLegendItemClick = e => {
     const seriesName = e[0].specId
     onClickSeriesLabel!(seriesName)
   }
@@ -198,7 +198,7 @@ const MetricsChart = ({
           legendPosition={Position.Right}
           legendSize={130}
           pointerUpdateDebounce={0}
-          onPointerUpdate={(e) => ee.emit(e)}
+          onPointerUpdate={e => ee.emit(e)}
           xDomain={{ min: range[0] * 1000, max: range[1] * 1000 }}
           onBrushEnd={hanldeOnBrush}
           onLegendItemClick={handleLegendItemClick}
@@ -213,12 +213,12 @@ const MetricsChart = ({
           id="left"
           position={Position.Left}
           showOverlappingTicks
-          tickFormat={(v) =>
-            unit ? getValueFormat(unit)(v, 1) : getValueFormat("none")(v)
+          tickFormat={v =>
+            unit ? getValueFormat(unit)(v, 1) : getValueFormat('none')(v)
           }
           ticks={5}
         />
-        {data?.values.map((qd) => renderQueryData(qd))}
+        {data?.values.map(qd => renderQueryData(qd))}
         {data && (
           <LineSeries // An empty series to avoid "no data" notice
             id="_placeholder"

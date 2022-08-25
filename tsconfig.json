@@ -1,17 +1,15 @@
 {
-	"compilerOptions": {
-	  "allowSyntheticDefaultImports": true,
-	  "sourceMap": true,
-	  "target": "es6",
-	  "moduleResolution": "node",
-	  "lib": [
-		"esnext",
-		"dom"
-	  ],
-	  "skipLibCheck": true,
-	  "jsx": "react"
-	},
 	"include": [
-	  "./src/**/*",
-	]
-  }
+		"src/**/*.ts",
+		"src/index.d.ts"
+	],
+	"compilerOptions": {
+		"baseUrl": "./",
+		"skipDefaultLibCheck": true,
+		"skipLibCheck": true,
+		"declaration": true,
+		"emitDeclarationOnly": true,
+		"esModuleInterop": true,
+		"jsx": "react"
+	}
+}
