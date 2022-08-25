@@ -8,18 +8,19 @@ import {
   ScaleType,
   LineSeries,
   BrushEvent,
+  PointerEvent
 } from '@elastic/charts'
 import { AxiosPromise } from 'axios'
 import { getValueFormat } from '@baurine/grafana-value-formats'
 
 import {
   TimeRangeValue,
-  IQueryOption,
+  IQueryConfig,
   TransformNullValue,
   MetricsQueryResponse,
   QueryOptions,
   QueryData,
-} from './types'
+} from './interfaces'
 import {
   processRawData,
   PromMatrixData,
@@ -37,7 +38,7 @@ import { renderQueryData } from './seriesRenderer'
 import { ChartContext } from './ChartContext'
 
 export interface IMetricChartProps {
-  queries: IQueryOption[]
+  queries: IQueryConfig[]
   range: TimeRangeValue
   unit?: string
   nullValue?: TransformNullValue
@@ -45,6 +46,7 @@ export interface IMetricChartProps {
   onError?: (err: Error | null) => void
   onLoading?: (isLoading: boolean) => void
   onBrush?: (newRange: TimeRangeValue) => void
+  onPointerUpdate?: (event: PointerEvent) => void
   onClickSeriesLabel?: (seriesName: string) => void
   fetchPromeData: (params: {
     endTimeSec: number
@@ -70,6 +72,7 @@ const MetricsChart = ({
   onBrush,
   onError,
   onLoading,
+  onPointerUpdate,
   fetchPromeData,
   onClickSeriesLabel,
 }: IMetricChartProps) => {
@@ -77,8 +80,12 @@ const MetricsChart = ({
   const chartContainerRef = useRef<HTMLDivElement>(null)
   const [chartHandle] = useChartHandle(chartContainerRef, 150)
   const [data, setData] = useState<Data | null>(null)
-  const ee = useContext(ChartContext)
-  ee.useSubscription(e => chartRef.current?.dispatchExternalPointerEvent(e))
+  // const ee = useContext(ChartContext)
+  // ee.useSubscription(e => chartRef.current?.dispatchExternalPointerEvent(e))
+
+  console.log('queries', queries)
+  console.log('range', range)
+  console.log('fetch prome data', fetchPromeData)
 
   useChange(() => {
     const interval = chartHandle.calcIntervalSec(range)
@@ -190,6 +197,10 @@ const MetricsChart = ({
     onClickSeriesLabel!(seriesName)
   }
 
+  // const handleOnPointerUpdate = (ev: PointerEvent) => {
+  //   onPointerUpdate(ev)
+  // }
+
   return (
     <div ref={chartContainerRef}>
       <Chart size={{ height }} ref={chartRef}>
@@ -198,7 +209,7 @@ const MetricsChart = ({
           legendPosition={Position.Right}
           legendSize={130}
           pointerUpdateDebounce={0}
-          onPointerUpdate={e => ee.emit(e)}
+          // onPointerUpdate={handleOnPointerUpdate}
           xDomain={{ min: range[0] * 1000, max: range[1] * 1000 }}
           onBrushEnd={hanldeOnBrush}
           onLegendItemClick={handleLegendItemClick}

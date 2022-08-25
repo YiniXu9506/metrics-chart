@@ -1,5 +1,5 @@
 import { BarSeries, LineSeries, ScaleType, AreaSeries } from '@elastic/charts'
-import { QueryData } from './types'
+import { QueryData } from './interfaces'
 import React from 'react'
 
 export function renderQueryData(qd: QueryData) {

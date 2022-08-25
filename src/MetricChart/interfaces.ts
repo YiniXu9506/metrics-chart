@@ -41,7 +41,7 @@ export interface QueryOptions {
   end: number
 }
 
-export interface IQueryOption {
+export interface IQueryConfig {
   promql: string
   name: string
   color?: ColorType | ((seriesName: string) => string | undefined)

@@ -8,7 +8,7 @@ import {
   TooltipType,
   TooltipValue,
 } from '@elastic/charts'
-import { TimeRangeValue } from '../MetricChart/types'
+import { TimeRangeValue } from '../MetricChart/interfaces'
 import dayjs from 'dayjs'
 import React, { useRef } from 'react'
 import { DEFAULT_MIN_INTERVAL_SEC } from './prometheus'

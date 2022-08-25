@@ -6,7 +6,7 @@
 import { DEFAULT_MIN_INTERVAL_SEC } from '.'
 import { isMatrixData, MatrixOrVectorResult } from './types'
 
-import { DataPoint, QueryOptions } from '../../MetricChart/types'
+import { DataPoint, QueryOptions } from '../../MetricChart/interfaces'
 
 const POSITIVE_INFINITY_SAMPLE_VALUE = '+Inf'
 const NEGATIVE_INFINITY_SAMPLE_VALUE = '-Inf'
