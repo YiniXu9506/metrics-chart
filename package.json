@@ -3,9 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "source": "src/index.ts",
-  "main": "dist/main.js",
-  "module": "dist/module.js",
-  "types": "dist/types.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/types/index.d.ts",
   "dependencies": {
     "@baurine/grafana-value-formats": "^1.0.4",
     "@swc/helpers": "^0.4.9",
@@ -33,7 +32,7 @@
   "scripts": {
     "start": "parcel start",
     "build": "parcel build --no-optimize && npm run build:type",
-    "build:type": "npx -p typescript tsc --out dist/types.d.ts"
+    "build:type": "npx -p typescript tsc --outDir dist/types"
   },
   "eslintConfig": {
     "extends": [
