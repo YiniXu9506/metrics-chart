@@ -10,6 +10,7 @@
 		"declaration": true,
 		"emitDeclarationOnly": true,
 		"esModuleInterop": true,
+		"lib": ["es2021", "dom"],
 		"jsx": "react"
 	}
 }
