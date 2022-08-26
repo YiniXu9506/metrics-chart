@@ -1,4 +1,4 @@
-import React, { useRef, useState, useContext } from 'react'
+import React, { useRef, useState, useContext, useCallback } from 'react'
 
 import {
   Chart,
@@ -83,9 +83,7 @@ const MetricsChart = ({
   // const ee = useContext(ChartContext)
   // ee.useSubscription(e => chartRef.current?.dispatchExternalPointerEvent(e))
 
-  console.log('queries', queries)
   console.log('range', range)
-  console.log('fetch prome data', fetchPromeData)
 
   useChange(() => {
     const interval = chartHandle.calcIntervalSec(range)
@@ -185,19 +183,26 @@ const MetricsChart = ({
     queryAllMetrics()
   }, [range])
 
-  const hanldeOnBrush = (ev: BrushEvent) => {
-    if (!ev.x) {
-      return
-    }
-    onBrush([ev.x[0] as number, ev.x[1] as number])
-  }
+  const handleBrushEnd = useCallback(
+    (ev: BrushEvent) => {
+      if (!ev.x) {
+        return
+      }
+      const timeRange: TimeRangeValue = [
+        Math.floor((ev.x[0] as number) / 1000),
+        Math.floor((ev.x[1] as number) / 1000)
+      ]
+      onBrush?.(alignRange(timeRange))
+    },
+    [onBrush]
+  )
 
   const handleLegendItemClick = e => {
     const seriesName = e[0].specId
     onClickSeriesLabel!(seriesName)
   }
 
-  // const handleOnPointerUpdate = (ev: PointerEvent) => {
+  // const handlePointerUpdate = (ev: PointerEvent) => {
   //   onPointerUpdate(ev)
   // }
 
@@ -209,9 +214,9 @@ const MetricsChart = ({
           legendPosition={Position.Right}
           legendSize={130}
           pointerUpdateDebounce={0}
-          // onPointerUpdate={handleOnPointerUpdate}
+          // onPointerUpdate={handlePointerUpdate}
           xDomain={{ min: range[0] * 1000, max: range[1] * 1000 }}
-          onBrushEnd={hanldeOnBrush}
+          onBrushEnd={handleBrushEnd}
           onLegendItemClick={handleLegendItemClick}
         />
         <Axis
