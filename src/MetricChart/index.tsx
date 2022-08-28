@@ -8,10 +8,11 @@ import {
   ScaleType,
   LineSeries,
   BrushEvent,
-  PointerEvent
+  PointerEvent,
 } from '@elastic/charts'
 import { AxiosPromise } from 'axios'
 import { getValueFormat } from '@baurine/grafana-value-formats'
+import format from 'string-template'
 
 import {
   TimeRangeValue,
@@ -35,7 +36,7 @@ import {
 
 import { useChange } from '../utils/useChange'
 import { renderQueryData } from './seriesRenderer'
-import { ChartContext } from './ChartContext'
+import { ChartContext } from './SyncChartContext'
 
 export interface IMetricChartProps {
   queries: IQueryConfig[]
@@ -46,7 +47,6 @@ export interface IMetricChartProps {
   onError?: (err: Error | null) => void
   onLoading?: (isLoading: boolean) => void
   onBrush?: (newRange: TimeRangeValue) => void
-  onPointerUpdate?: (event: PointerEvent) => void
   onClickSeriesLabel?: (seriesName: string) => void
   fetchPromeData: (params: {
     endTimeSec: number
@@ -72,7 +72,6 @@ const MetricsChart = ({
   onBrush,
   onError,
   onLoading,
-  onPointerUpdate,
   fetchPromeData,
   onClickSeriesLabel,
 }: IMetricChartProps) => {
@@ -80,10 +79,10 @@ const MetricsChart = ({
   const chartContainerRef = useRef<HTMLDivElement>(null)
   const [chartHandle] = useChartHandle(chartContainerRef, 150)
   const [data, setData] = useState<Data | null>(null)
-  // const ee = useContext(ChartContext)
-  // ee.useSubscription(e => chartRef.current?.dispatchExternalPointerEvent(e))
-
-  console.log('range', range)
+  const ee = useContext(ChartContext)
+  if (ee) {
+    ee.useSubscription(e => chartRef.current?.dispatchExternalPointerEvent(e))
+  }
 
   useChange(() => {
     const interval = chartHandle.calcIntervalSec(range)
@@ -161,10 +160,7 @@ const MetricsChart = ({
 
           const d: QueryData = {
             id: `${queryIdx}_${seriesIdx}`,
-            name:
-              Object.keys(promResult.metric).length === 0
-                ? queries[queryIdx].name
-                : Object.values(promResult.metric)[0],
+            name: format(queries[queryIdx].name, promResult.metric),
             data: transformedData,
             type: queries[queryIdx].type,
             color: queries[queryIdx].color,
@@ -190,7 +186,7 @@ const MetricsChart = ({
       }
       const timeRange: TimeRangeValue = [
         Math.floor((ev.x[0] as number) / 1000),
-        Math.floor((ev.x[1] as number) / 1000)
+        Math.floor((ev.x[1] as number) / 1000),
       ]
       onBrush?.(alignRange(timeRange))
     },
@@ -202,9 +198,12 @@ const MetricsChart = ({
     onClickSeriesLabel!(seriesName)
   }
 
-  // const handlePointerUpdate = (ev: PointerEvent) => {
-  //   onPointerUpdate(ev)
-  // }
+  const handlePointerUpdate = (e: PointerEvent) => {
+    if(ee) {
+      ee.emit(e)
+    }
+    return
+  }
 
   return (
     <div ref={chartContainerRef}>
@@ -214,7 +213,7 @@ const MetricsChart = ({
           legendPosition={Position.Right}
           legendSize={130}
           pointerUpdateDebounce={0}
-          // onPointerUpdate={handlePointerUpdate}
+          onPointerUpdate={handlePointerUpdate}
           xDomain={{ min: range[0] * 1000, max: range[1] * 1000 }}
           onBrushEnd={handleBrushEnd}
           onLegendItemClick={handleLegendItemClick}
