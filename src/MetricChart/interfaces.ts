@@ -25,7 +25,7 @@ export enum TransformNullValue {
   AS_ZERO = 'as_zero',
 }
 
-export type TimeRangeValue = [minSecond: number, maxSecond: number]
+export type TimeRangeValue = [minSecond: number, maxSecond: number] // unit: second
 export type DataPoint = [msTimestamp: number, value: number | null]
 export type QueryData = {
   id: string

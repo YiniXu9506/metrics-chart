@@ -114,7 +114,7 @@ export function useChartHandle(
   const chartRef = useRef<ChartHandle>({
     calcIntervalSec: (range, minIntervalSec = DEFAULT_MIN_INTERVAL_SEC) => {
       const maxDataPoints =
-        ((containerRef.current?.offsetWidth ?? 0) - legendWidth) / minBinWidth
+        ((containerRef.current?.offsetWidth || 0) - legendWidth) / minBinWidth
       if (maxDataPoints <= 0) {
         return minIntervalSec
       }

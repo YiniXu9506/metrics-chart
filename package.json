@@ -1,6 +1,6 @@
 {
   "name": "metrics-chart",
-  "version": "0.1.0",
+  "version": "0.7.0",
   "main": "dist/index.js",
   "types": "dist/types/index.d.ts",
   "targets": {
@@ -49,6 +49,18 @@
     "extends": [
       "react-app",
       "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
     ]
   }
 }
