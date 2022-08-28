@@ -199,7 +199,7 @@ const MetricsChart = ({
   }
 
   const handlePointerUpdate = (e: PointerEvent) => {
-    if(ee) {
+    if (ee) {
       ee.emit(e)
     }
     return
@@ -233,7 +233,9 @@ const MetricsChart = ({
           }
           ticks={5}
         />
-        {data?.values.map(qd => renderQueryData(qd))}
+        {data?.values.map((qd, idx) => (
+          <React.Fragment key={idx}>{renderQueryData(qd)}</React.Fragment>
+        ))}
         {data && (
           <LineSeries // An empty series to avoid "no data" notice
             id="_placeholder"

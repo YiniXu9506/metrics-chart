@@ -61,7 +61,7 @@ export function resolveQueryTemplate(
   options: QueryOptions
 ): string {
   return template.replace(
-    '$__rate_interval',
+    /\$__rate_interval/g,
     `${Math.max(options.step, 4 * DEFAULT_MIN_INTERVAL_SEC)}s`
   )
 }
