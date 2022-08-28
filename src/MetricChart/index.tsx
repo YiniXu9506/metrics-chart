@@ -195,7 +195,7 @@ const MetricsChart = ({
 
   const handleLegendItemClick = e => {
     const seriesName = e[0].specId
-    onClickSeriesLabel!(seriesName)
+    onClickSeriesLabel?.(seriesName)
   }
 
   const handlePointerUpdate = (e: PointerEvent) => {
