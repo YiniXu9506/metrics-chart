@@ -78,13 +78,12 @@ const MetricsChart = ({
   const chartRef = useRef<Chart>(null)
   const chartContainerRef = useRef<HTMLDivElement>(null)
   const [chartHandle] = useChartHandle(chartContainerRef, 150)
-  const [data, setData] = useState<Data | null>(null)
   const ee = useContext(ChartContext)
   if (ee) {
     ee.useSubscription(e => chartRef.current?.dispatchExternalPointerEvent(e))
   }
 
-  useChange(() => {
+  const getQueryOptions = (range: TimeRangeValue): QueryOptions => {
     const interval = chartHandle.calcIntervalSec(range)
     const rangeSnapshot = alignRange(range, interval) // Align the range according to calculated interval
     const queryOptions: QueryOptions = {
@@ -92,6 +91,21 @@ const MetricsChart = ({
       end: rangeSnapshot[1],
       step: interval,
     }
+    return queryOptions
+  }
+
+  const [data, setData] = useState<Data | null>(() => {
+    const initData: Data = {
+      meta: {
+        queryOptions: getQueryOptions(range),
+      },
+      values: []
+    }
+    return initData
+  })
+
+  useChange(() => {
+    const queryOptions = getQueryOptions(range)
 
     async function queryMetric(
       queryTemplate: string,
