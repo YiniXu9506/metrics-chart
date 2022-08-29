@@ -202,7 +202,7 @@ const MetricsChart = ({
   }, [range])
 
   useEffect(() => {
-    if (timezone) {
+    if (typeof timezone === 'number') {
       tz.setTimeZone(timezone)
     }
   }, [])
