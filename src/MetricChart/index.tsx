@@ -1,4 +1,4 @@
-import React, { useRef, useState, useContext, useCallback } from 'react'
+import React, { useRef, useState, useContext, useCallback, useMemo } from 'react'
 
 import {
   Chart,
@@ -116,7 +116,6 @@ const MetricsChart = ({
           }
         }
         fillInto[fillIdx] = data
-        onError?.(null)
       } catch (e) {
         fillInto[fillIdx] = null
         onError?.(e)
