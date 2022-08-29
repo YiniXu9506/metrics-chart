@@ -1,4 +1,11 @@
-import React, { useRef, useState, useContext, useCallback, useMemo } from 'react'
+import React, {
+  useRef,
+  useState,
+  useContext,
+  useCallback,
+  useMemo,
+  useEffect,
+} from 'react'
 
 import {
   Chart,
@@ -34,6 +41,8 @@ import {
   useChartHandle,
 } from '../utils/charts'
 
+import tz from '../utils/timezone'
+
 import { useChange } from '../utils/useChange'
 import { renderQueryData } from './seriesRenderer'
 import { ChartContext } from './SyncChartContext'
@@ -44,6 +53,7 @@ export interface IMetricChartProps {
   unit?: string
   nullValue?: TransformNullValue
   height?: number
+  timezone?: number
   onError?: (err: Error | null) => void
   onLoading?: (isLoading: boolean) => void
   onBrush?: (newRange: TimeRangeValue) => void
@@ -69,6 +79,7 @@ const MetricsChart = ({
   unit,
   nullValue = TransformNullValue.NULL,
   height = 200,
+  timezone,
   onBrush,
   onError,
   onLoading,
@@ -79,9 +90,7 @@ const MetricsChart = ({
   const chartContainerRef = useRef<HTMLDivElement>(null)
   const [chartHandle] = useChartHandle(chartContainerRef, 150)
   const ee = useContext(ChartContext)
-  if (ee) {
-    ee.useSubscription(e => chartRef.current?.dispatchExternalPointerEvent(e))
-  }
+  ee.useSubscription(e => chartRef.current?.dispatchExternalPointerEvent(e))
 
   const getQueryOptions = (range: TimeRangeValue): QueryOptions => {
     const interval = chartHandle.calcIntervalSec(range)
@@ -99,7 +108,7 @@ const MetricsChart = ({
       meta: {
         queryOptions: getQueryOptions(range),
       },
-      values: []
+      values: [],
     }
     return initData
   })
@@ -192,6 +201,12 @@ const MetricsChart = ({
     queryAllMetrics()
   }, [range])
 
+  useEffect(() => {
+    if (timezone) {
+      tz.setTimeZone(timezone)
+    }
+  }, [])
+
   const handleBrushEnd = useCallback(
     (ev: BrushEvent) => {
       if (!ev.x) {
@@ -211,13 +226,6 @@ const MetricsChart = ({
     onClickSeriesLabel?.(seriesName)
   }
 
-  const handlePointerUpdate = (e: PointerEvent) => {
-    if (ee) {
-      ee.emit(e)
-    }
-    return
-  }
-
   return (
     <div ref={chartContainerRef}>
       <Chart size={{ height }} ref={chartRef}>
@@ -226,7 +234,7 @@ const MetricsChart = ({
           legendPosition={Position.Right}
           legendSize={130}
           pointerUpdateDebounce={0}
-          onPointerUpdate={handlePointerUpdate}
+          onPointerUpdate={e => ee.emit(e)}
           xDomain={{ min: range[0] * 1000, max: range[1] * 1000 }}
           onBrushEnd={handleBrushEnd}
           onLegendItemClick={handleLegendItemClick}

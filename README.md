@@ -23,20 +23,3 @@ import { MetricsChart, SyncChartContext } from 'metrics-chart'
     ))}
 </SyncChartContext>
 ```
-
-### Use metrics chart without event sync
-
-```
-import { MetricsChart } from 'metrics-chart'
-
-<>
-    {metricsList.map((metrics) => (
-        <MetricsChart
-            queries={m.metrics}
-            range={range}
-            ...
-        />
-    ))}
-</>
-
-```

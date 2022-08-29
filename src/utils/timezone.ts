@@ -17,6 +17,7 @@ function getTimeZone() {
   if (_tz === null) {
     _tz = getLocalTimeZone()
   }
+
   return _tz
 }
 
