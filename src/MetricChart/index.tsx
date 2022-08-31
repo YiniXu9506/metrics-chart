@@ -3,7 +3,6 @@ import React, {
   useState,
   useContext,
   useCallback,
-  useMemo,
   useEffect,
 } from 'react'
 
@@ -15,7 +14,6 @@ import {
   ScaleType,
   LineSeries,
   BrushEvent,
-  PointerEvent,
 } from '@elastic/charts'
 import { AxiosPromise } from 'axios'
 import { getValueFormat } from '@baurine/grafana-value-formats'
@@ -266,8 +264,8 @@ const MetricsChart = ({
             yAccessors={[1]}
             hideInLegend
             data={[
-              [data.meta.queryOptions.start * 1000, 0],
-              [data.meta.queryOptions.end * 1000, 0],
+              [data.meta.queryOptions.start * 1000, null],
+              [data.meta.queryOptions.end * 1000, null],
             ]}
           />
         )}
