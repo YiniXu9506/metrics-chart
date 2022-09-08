@@ -54,6 +54,8 @@ export interface IMetricChartProps {
   timezone?: number
   onError?: (err: Error | null) => void
   onLoading?: (isLoading: boolean) => void
+  errorComponent?: (err: Error) => Element
+  loadingComponent?: () => Element
   onBrush?: (newRange: TimeRangeValue) => void
   onClickSeriesLabel?: (seriesName: string) => void
   fetchPromeData: (params: {
@@ -81,12 +83,16 @@ const MetricsChart = ({
   onBrush,
   onError,
   onLoading,
+  errorComponent,
+  loadingComponent,
   fetchPromeData,
   onClickSeriesLabel,
 }: IMetricChartProps) => {
   const chartRef = useRef<Chart>(null)
   const chartContainerRef = useRef<HTMLDivElement>(null)
   const [chartHandle] = useChartHandle(chartContainerRef, 150)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState(null)
   const ee = useContext(ChartContext)
   ee.useSubscription(e => chartRef.current?.dispatchExternalPointerEvent(e))
 
@@ -140,11 +146,13 @@ const MetricsChart = ({
       } catch (e) {
         fillInto[fillIdx] = null
         onError?.(e)
+        setError(e)
       }
     }
 
     async function queryAllMetrics() {
       onLoading?.(true)
+      setIsLoading(true)
       const dataSets: (PromMatrixData | null)[] = []
       try {
         await Promise.all(
@@ -152,6 +160,7 @@ const MetricsChart = ({
         )
       } finally {
         onLoading?.(false)
+        setIsLoading(false)
       }
 
       // Transform response into data
@@ -224,8 +233,13 @@ const MetricsChart = ({
     onClickSeriesLabel?.(seriesName)
   }
 
-  return (
-    <div ref={chartContainerRef}>
+  let chartView = null
+  if (isLoading && loadingComponent) {
+    chartView = loadingComponent()
+  } else if (error && errorComponent) {
+    chartView = errorComponent(error)
+  } else
+    chartView = (
       <Chart size={{ height }} ref={chartRef}>
         <Settings
           {...DEFAULT_CHART_SETTINGS}
@@ -270,8 +284,9 @@ const MetricsChart = ({
           />
         )}
       </Chart>
-    </div>
-  )
+    )
+
+  return <div ref={chartContainerRef}>{chartView}</div>
 }
 
 export default MetricsChart
