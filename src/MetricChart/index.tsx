@@ -14,6 +14,7 @@ import {
   ScaleType,
   LineSeries,
   BrushEvent,
+  SettingsProps,
 } from '@elastic/charts'
 import { AxiosPromise } from 'axios'
 import { getValueFormat } from '@baurine/grafana-value-formats'
@@ -54,10 +55,11 @@ export interface IMetricChartProps {
   timezone?: number
   onError?: (err: Error | null) => void
   onLoading?: (isLoading: boolean) => void
-  errorComponent?: (err: Error) => Element
-  loadingComponent?: () => Element
+  errorComponent?: (err: Error) => JSX.Element
+  loadingComponent?: () => JSX.Element
   onBrush?: (newRange: TimeRangeValue) => void
   onClickSeriesLabel?: (seriesName: string) => void
+  chartSetting?: SettingsProps
   fetchPromeData: (params: {
     endTimeSec: number
     query: string
@@ -87,6 +89,7 @@ const MetricsChart = ({
   loadingComponent,
   fetchPromeData,
   onClickSeriesLabel,
+  chartSetting,
 }: IMetricChartProps) => {
   const chartRef = useRef<Chart>(null)
   const chartContainerRef = useRef<HTMLDivElement>(null)
@@ -235,16 +238,14 @@ const MetricsChart = ({
 
   let chartView = null
   if (isLoading && loadingComponent) {
-    chartView = loadingComponent()
+    chartView = <div style={{ height }}>{loadingComponent()}</div>
   } else if (error && errorComponent) {
-    chartView = errorComponent(error)
+    chartView = <div style={{ height }}>{errorComponent(error)}</div>
   } else
     chartView = (
       <Chart size={{ height }} ref={chartRef}>
         <Settings
-          {...DEFAULT_CHART_SETTINGS}
-          legendPosition={Position.Right}
-          legendSize={130}
+          {...{...DEFAULT_CHART_SETTINGS, ...(chartSetting || {})}}
           pointerUpdateDebounce={0}
           onPointerUpdate={e => ee.emit(e)}
           xDomain={{ min: range[0] * 1000, max: range[1] * 1000 }}
