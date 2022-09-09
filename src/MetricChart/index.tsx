@@ -22,7 +22,7 @@ import format from 'string-template'
 
 import {
   TimeRangeValue,
-  IQueryConfig,
+  QueryConfig,
   TransformNullValue,
   MetricsQueryResponse,
   QueryOptions,
@@ -44,10 +44,10 @@ import tz from '../utils/timezone'
 
 import { useChange } from '../utils/useChange'
 import { renderQueryData } from './seriesRenderer'
-import { ChartContext } from './SyncChartContext'
+import { SyncChartPointerContext } from './SyncChartPointerContext'
 
 export interface IMetricChartProps {
-  queries: IQueryConfig[]
+  queries: QueryConfig[]
   range: TimeRangeValue
   unit?: string
   nullValue?: TransformNullValue
@@ -96,7 +96,7 @@ const MetricsChart = ({
   const [chartHandle] = useChartHandle(chartContainerRef, 150)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
-  const ee = useContext(ChartContext)
+  const ee = useContext(SyncChartPointerContext)
   ee.useSubscription(e => chartRef.current?.dispatchExternalPointerEvent(e))
 
   const getQueryOptions = (range: TimeRangeValue): QueryOptions => {
