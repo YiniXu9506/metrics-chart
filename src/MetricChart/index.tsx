@@ -14,6 +14,7 @@ import {
   ScaleType,
   LineSeries,
   BrushEvent,
+  SettingsProps,
 } from '@elastic/charts'
 import { AxiosPromise } from 'axios'
 import { getValueFormat } from '@baurine/grafana-value-formats'
@@ -21,7 +22,7 @@ import format from 'string-template'
 
 import {
   TimeRangeValue,
-  IQueryConfig,
+  QueryConfig,
   TransformNullValue,
   MetricsQueryResponse,
   QueryOptions,
@@ -43,10 +44,10 @@ import tz from '../utils/timezone'
 
 import { useChange } from '../utils/useChange'
 import { renderQueryData } from './seriesRenderer'
-import { ChartContext } from './SyncChartContext'
+import { SyncChartPointerContext } from './SyncChartPointerContext'
 
 export interface IMetricChartProps {
-  queries: IQueryConfig[]
+  queries: QueryConfig[]
   range: TimeRangeValue
   unit?: string
   nullValue?: TransformNullValue
@@ -54,8 +55,11 @@ export interface IMetricChartProps {
   timezone?: number
   onError?: (err: Error | null) => void
   onLoading?: (isLoading: boolean) => void
+  errorComponent?: (err: Error) => JSX.Element
+  loadingComponent?: () => JSX.Element
   onBrush?: (newRange: TimeRangeValue) => void
   onClickSeriesLabel?: (seriesName: string) => void
+  chartSetting?: SettingsProps
   fetchPromeData: (params: {
     endTimeSec: number
     query: string
@@ -81,13 +85,18 @@ const MetricsChart = ({
   onBrush,
   onError,
   onLoading,
+  errorComponent,
+  loadingComponent,
   fetchPromeData,
   onClickSeriesLabel,
+  chartSetting,
 }: IMetricChartProps) => {
   const chartRef = useRef<Chart>(null)
   const chartContainerRef = useRef<HTMLDivElement>(null)
   const [chartHandle] = useChartHandle(chartContainerRef, 150)
-  const ee = useContext(ChartContext)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const ee = useContext(SyncChartPointerContext)
   ee.useSubscription(e => chartRef.current?.dispatchExternalPointerEvent(e))
 
   const getQueryOptions = (range: TimeRangeValue): QueryOptions => {
@@ -140,11 +149,14 @@ const MetricsChart = ({
       } catch (e) {
         fillInto[fillIdx] = null
         onError?.(e)
+        setError(e)
       }
     }
 
     async function queryAllMetrics() {
       onLoading?.(true)
+      setIsLoading(true)
+      setError(null)
       const dataSets: (PromMatrixData | null)[] = []
       try {
         await Promise.all(
@@ -152,6 +164,7 @@ const MetricsChart = ({
         )
       } finally {
         onLoading?.(false)
+        setIsLoading(false)
       }
 
       // Transform response into data
@@ -224,13 +237,18 @@ const MetricsChart = ({
     onClickSeriesLabel?.(seriesName)
   }
 
+  if (isLoading && loadingComponent) {
+    return <div style={{ height }}>{loadingComponent()}</div>
+  }
+  if (error && errorComponent) {
+    return <div style={{ height }}>{errorComponent(error)}</div>
+  }
+
   return (
     <div ref={chartContainerRef}>
       <Chart size={{ height }} ref={chartRef}>
         <Settings
-          {...DEFAULT_CHART_SETTINGS}
-          legendPosition={Position.Right}
-          legendSize={130}
+          {...{ ...DEFAULT_CHART_SETTINGS, ...(chartSetting || {}) }}
           pointerUpdateDebounce={0}
           onPointerUpdate={e => ee.emit(e)}
           xDomain={{ min: range[0] * 1000, max: range[1] * 1000 }}
@@ -247,9 +265,13 @@ const MetricsChart = ({
           id="left"
           position={Position.Left}
           showOverlappingTicks
-          tickFormat={v =>
-            unit ? getValueFormat(unit)(v, 1) : getValueFormat('none')(v)
-          }
+          tickFormat={(v) => {
+            let _unit = unit || 'none'
+            if ((_unit === 'short' || _unit === 'none') && v < 1e-1 && v > 0) {
+              _unit = 'sci'
+            }
+            return getValueFormat(_unit)(v, 1)
+          }}
           ticks={5}
         />
         {data?.values.map((qd, idx) => (

@@ -7,6 +7,7 @@ import {
   TooltipStickTo,
   TooltipType,
   TooltipValue,
+  Position,
 } from '@elastic/charts'
 import { TimeRangeValue } from '../MetricChart/interfaces'
 import dayjs from 'dayjs'
@@ -80,6 +81,8 @@ export const DEFAULT_THEME: PartialTheme = {
 
 export const DEFAULT_CHART_SETTINGS: SettingsProps = {
   showLegend: true,
+  legendPosition: Position.Right,
+  legendSize: 130,
   showLegendExtra: true,
   tooltip: DEFAULT_TOOLTIP_SETTINGS,
   theme: DEFAULT_THEME,
