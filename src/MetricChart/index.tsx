@@ -156,6 +156,7 @@ const MetricsChart = ({
     async function queryAllMetrics() {
       onLoading?.(true)
       setIsLoading(true)
+      setError(null)
       const dataSets: (PromMatrixData | null)[] = []
       try {
         await Promise.all(
@@ -236,16 +237,18 @@ const MetricsChart = ({
     onClickSeriesLabel?.(seriesName)
   }
 
-  let chartView = null
   if (isLoading && loadingComponent) {
-    chartView = <div style={{ height }}>{loadingComponent()}</div>
-  } else if (error && errorComponent) {
-    chartView = <div style={{ height }}>{errorComponent(error)}</div>
-  } else
-    chartView = (
+    return <div style={{ height }}>{loadingComponent()}</div>
+  }
+  if (error && errorComponent) {
+    return <div style={{ height }}>{errorComponent(error)}</div>
+  }
+
+  return (
+    <div ref={chartContainerRef}>
       <Chart size={{ height }} ref={chartRef}>
         <Settings
-          {...{...DEFAULT_CHART_SETTINGS, ...(chartSetting || {})}}
+          {...{ ...DEFAULT_CHART_SETTINGS, ...(chartSetting || {}) }}
           pointerUpdateDebounce={0}
           onPointerUpdate={e => ee.emit(e)}
           xDomain={{ min: range[0] * 1000, max: range[1] * 1000 }}
@@ -262,9 +265,13 @@ const MetricsChart = ({
           id="left"
           position={Position.Left}
           showOverlappingTicks
-          tickFormat={v =>
-            unit ? getValueFormat(unit)(v, 1) : getValueFormat('none')(v)
-          }
+          tickFormat={(v) => {
+            let _unit = unit || 'none'
+            if ((_unit === 'short' || _unit === 'none') && v < 1e-1 && v > 0) {
+              _unit = 'sci'
+            }
+            return getValueFormat(_unit)(v, 1)
+          }}
           ticks={5}
         />
         {data?.values.map((qd, idx) => (
@@ -285,9 +292,8 @@ const MetricsChart = ({
           />
         )}
       </Chart>
-    )
-
-  return <div ref={chartContainerRef}>{chartView}</div>
+    </div>
+  )
 }
 
 export default MetricsChart
