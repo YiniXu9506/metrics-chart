@@ -13,7 +13,7 @@ npm install -S metrics-chart
 ```
 import { MetricsChart, SyncChartContext } from 'metrics-chart'
 
-<SyncChartContext>
+<SyncChartPointer>
     {metricsList.map((metrics) => (
         <MetricsChart
             queries={m.metrics}
@@ -21,5 +21,5 @@ import { MetricsChart, SyncChartContext } from 'metrics-chart'
             ...
         />
     ))}
-</SyncChartContext>
+</SyncChartPointer>
 ```
