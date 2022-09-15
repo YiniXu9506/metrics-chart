@@ -268,7 +268,7 @@ const MetricsChart = ({
           showOverlappingTicks
           tickFormat={(v) => {
             let _unit = unit || 'none'
-            if (toPrecisionUnits.includes(_unit) && v < 1000) {
+            if (toPrecisionUnits.includes(_unit) && v < 1) {
               return v.toPrecision(3)
             }
             return getValueFormat(_unit)(v, 2)
