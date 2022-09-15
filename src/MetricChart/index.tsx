@@ -98,7 +98,7 @@ const MetricsChart = ({
   const [error, setError] = useState(null)
   const ee = useContext(SyncChartPointerContext)
   ee.useSubscription(e => chartRef.current?.dispatchExternalPointerEvent(e))
-  const toPrecisionUnits = ['short', 'none', 'qps']
+  const toPrecisionUnits = ['short', 'none']
 
   const getQueryOptions = (range: TimeRangeValue): QueryOptions => {
     const interval = chartHandle.calcIntervalSec(range)
@@ -268,10 +268,10 @@ const MetricsChart = ({
           showOverlappingTicks
           tickFormat={(v) => {
             let _unit = unit || 'none'
-            if (toPrecisionUnits.includes(_unit)) {
-              return v.toPrecision(2)
+            if (toPrecisionUnits.includes(_unit) && v < 1) {
+              return v.toPrecision(3)
             }
-            return getValueFormat(_unit)(v, 1)
+            return getValueFormat(_unit)(v, 2)
           }}
           ticks={5}
         />
