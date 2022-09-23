@@ -183,7 +183,7 @@ const MetricsChart = ({
           const transformedData =
             nullValue === TransformNullValue.AS_ZERO
               ? data
-                  .filter(d => d[0] > queryOptions[0] && d[0] < queryOptions[1])
+                  .filter(d => d[0] > range[0] && d[0] < range[1])
                   .map(d => {
                     if (d[1] !== null) {
                       return d
