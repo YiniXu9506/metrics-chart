@@ -169,6 +169,7 @@ const MetricsChart = ({
 
       // Transform response into data
       const sd: QueryData[] = []
+      const rangeMs = range.map(t => t * 1000)
       dataSets.forEach((data, queryIdx) => {
         if (!data) {
           return
@@ -180,7 +181,7 @@ const MetricsChart = ({
           }
 
           const dataInTimeRange = data.filter(
-            d => d[0] > range[0] && d[0] < range[1]
+            d => d[0] > rangeMs[0] && d[0] < rangeMs[1]
           )
           // transform data according to nullValue config
           const transformedData =
