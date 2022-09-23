@@ -179,19 +179,20 @@ const MetricsChart = ({
             return
           }
 
+          const dataInTimeRange = data.filter(
+            d => d[0] > range[0] && d[0] < range[1]
+          )
           // transform data according to nullValue config
           const transformedData =
             nullValue === TransformNullValue.AS_ZERO
-              ? data
-                  .filter(d => d[0] > range[0] && d[0] < range[1])
-                  .map(d => {
-                    if (d[1] !== null) {
-                      return d
-                    }
-                    d[1] = 0
+              ? dataInTimeRange.map(d => {
+                  if (d[1] !== null) {
                     return d
-                  })
-              : data
+                  }
+                  d[1] = 0
+                  return d
+                })
+              : dataInTimeRange
 
           const d: QueryData = {
             id: `${queryIdx}_${seriesIdx}`,
