@@ -1,6 +1,6 @@
 {
   "name": "metrics-chart",
-  "version": "0.19.0",
+  "version": "0.20.0",
   "main": "dist/index.js",
   "types": "dist/types/index.d.ts",
   "targets": {
@@ -11,7 +11,6 @@
       "includeNodeModules": {
         "@elastic/charts": false,
         "ahooks": false,
-        "axios": false,
         "react": false,
         "react-dom": false
       }
@@ -35,7 +34,6 @@
   "peerDependencies": {
     "@elastic/charts": "^46.10.1",
     "ahooks": "^3.7.0",
-    "axios": "^0.27.2",
     "react": "^17.0.2",
     "react-dom": "^17.0.2"
   },

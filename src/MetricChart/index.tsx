@@ -16,7 +16,6 @@ import {
   BrushEvent,
   SettingsProps,
 } from '@elastic/charts'
-import { AxiosPromise } from 'axios'
 import { getValueFormat } from '@baurine/grafana-value-formats'
 import format from 'string-template'
 
@@ -65,7 +64,7 @@ export interface IMetricChartProps {
     query: string
     startTimeSec: number
     stepSec: number
-  }) => AxiosPromise<MetricsQueryResponse>
+  }) => Promise<MetricsQueryResponse>
 }
 
 type Data = {
@@ -139,8 +138,8 @@ const MetricsChart = ({
       try {
         const resp = await fetchPromeData(pramas)
         let data: PromMatrixData | null = null
-        if (resp.data.status === 'success') {
-          data = resp.data.data as any
+        if (resp.status === 'success') {
+          data = resp.data as any
           if (data?.resultType !== 'matrix') {
             // unsupported
             data = null
