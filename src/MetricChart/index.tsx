@@ -183,13 +183,15 @@ const MetricsChart = ({
           // transform data according to nullValue config
           const transformedData =
             nullValue === TransformNullValue.AS_ZERO
-              ? data.map(d => {
-                  if (d[1] !== null) {
+              ? data
+                  .filter(d => d[0] > queryOptions[0] && d[0] < queryOptions[1])
+                  .map(d => {
+                    if (d[1] !== null) {
+                      return d
+                    }
+                    d[1] = 0
                     return d
-                  }
-                  d[1] = 0
-                  return d
-                })
+                  })
               : data
 
           const d: QueryData = {
@@ -266,7 +268,7 @@ const MetricsChart = ({
           id="left"
           position={Position.Left}
           showOverlappingTicks
-          tickFormat={(v) => {
+          tickFormat={v => {
             let _unit = unit || 'none'
             if (toPrecisionUnits.includes(_unit) && v < 1) {
               return v.toPrecision(3)
