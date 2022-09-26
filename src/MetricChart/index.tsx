@@ -181,7 +181,7 @@ const MetricsChart = ({
           }
 
           const dataInTimeRange = data.filter(
-            d => d[0] > rangeMs[0] && d[0] < rangeMs[1]
+            d => d[0] >= rangeMs[0] && d[0] <= rangeMs[1]
           )
           // transform data according to nullValue config
           const transformedData =
