@@ -15,6 +15,7 @@ import {
   LineSeries,
   BrushEvent,
   SettingsProps,
+  ElementOverListener
 } from '@elastic/charts'
 import { getValueFormat } from '@baurine/grafana-value-formats'
 import format from 'string-template'
@@ -65,6 +66,7 @@ export interface IMetricChartProps {
     startTimeSec: number
     stepSec: number
   }) => Promise<MetricsQueryResponse>
+  onElementClick?: ElementOverListener
 }
 
 type Data = {
@@ -89,6 +91,7 @@ const MetricsChart = ({
   fetchPromeData,
   onClickSeriesLabel,
   chartSetting,
+  onElementClick
 }: IMetricChartProps) => {
   const chartRef = useRef<Chart>(null)
   const chartContainerRef = useRef<HTMLDivElement>(null)
@@ -248,6 +251,11 @@ const MetricsChart = ({
     return <div style={{ height }}>{errorComponent(error)}</div>
   }
 
+  const handleElementClick = e => {
+    console.log('e', e)
+    onElementClick?.(e)
+  }
+
   return (
     <div ref={chartContainerRef}>
       <Chart size={{ height }} ref={chartRef}>
@@ -258,6 +266,7 @@ const MetricsChart = ({
           xDomain={{ min: range[0] * 1000, max: range[1] * 1000 }}
           onBrushEnd={handleBrushEnd}
           onLegendItemClick={handleLegendItemClick}
+          onElementClick={handleElementClick}
         />
         <Axis
           id="bottom"
