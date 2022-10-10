@@ -15,7 +15,7 @@ import {
   LineSeries,
   BrushEvent,
   SettingsProps,
-  ElementOverListener
+  ElementClickListener
 } from '@elastic/charts'
 import { getValueFormat } from '@baurine/grafana-value-formats'
 import format from 'string-template'
@@ -66,7 +66,7 @@ export interface IMetricChartProps {
     startTimeSec: number
     stepSec: number
   }) => Promise<MetricsQueryResponse>
-  onElementClick?: ElementOverListener
+  onElementClick?: ElementClickListener
 }
 
 type Data = {
