@@ -13,7 +13,6 @@ import { TimeRangeValue } from '../MetricChart/interfaces'
 import dayjs from 'dayjs'
 import React, { useRef } from 'react'
 import { DEFAULT_MIN_INTERVAL_SEC } from './prometheus'
-import '@elastic/charts/dist/theme_only_light.css'
 import './chart.css'
 import tz from './timezone'
 

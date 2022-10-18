@@ -28,6 +28,7 @@ import {
   QueryOptions,
   QueryData,
 } from './interfaces'
+import { onToggleDeselectSeries } from './legendAction'
 import {
   processRawData,
   PromMatrixData,
@@ -242,6 +243,7 @@ const MetricsChart = ({
   const handleLegendItemClick = e => {
     const seriesName = e[0].specId
     onClickSeriesLabel?.(seriesName)
+    onToggleDeselectSeries(chartRef.current, e[0].specId)
   }
 
   if (isLoading && loadingComponent) {
