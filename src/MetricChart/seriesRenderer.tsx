@@ -1,4 +1,10 @@
-import { BarSeries, LineSeries, ScaleType, AreaSeries, BubbleSeries } from '@elastic/charts'
+import {
+  BarSeries,
+  LineSeries,
+  ScaleType,
+  AreaSeries,
+  BubbleSeries,
+} from '@elastic/charts'
 import { QueryData } from './interfaces'
 import React from 'react'
 
@@ -74,21 +80,22 @@ function renderAreaStack(qd: QueryData) {
 function renderPoint(qd: QueryData) {
   return (
     <BubbleSeries
-        id="bubbles"
-        xScaleType={ScaleType.Linear}
-        yScaleType={ScaleType.Linear}
-        xAccessor="x"
-        yAccessors={['y']}
-        data={qd.data}
-        name={qd.name}
-        pointStyleAccessor={() => {
-          return {
-            shape: 'circle',
-            fill: '__use__series__color__',
-            radius: 5,
-          };
-        }}
-      />
+      key={qd.id}
+      id={qd.name}
+      xScaleType={ScaleType.Time}
+      yScaleType={ScaleType.Linear}
+      xAccessor={0}
+      yAccessors={[1]}
+      data={qd.data}
+      pointStyleAccessor={d => {
+        return {
+          shape: 'circle',
+          fill: '__use__series__color__',
+          radius: 5,
+          strokeWidth: 1,
+          stroke: 'white',
+        }
+      }}
+    />
   )
 }
-
