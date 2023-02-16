@@ -241,61 +241,60 @@ const MetricsChart = ({
     onClickSeriesLabel?.(seriesName)
   }
 
-  if (isLoading && loadingComponent) {
-    return <div style={{ height }}>{loadingComponent()}</div>
-  }
-  if (error && errorComponent) {
-    return <div style={{ height }}>{errorComponent(error)}</div>
-  }
-
   return (
     <div ref={chartContainerRef}>
-      <Chart size={{ height }} ref={chartRef}>
-        <Settings
-          {...{ ...DEFAULT_CHART_SETTINGS, ...(chartSetting || {}) }}
-          pointerUpdateDebounce={0}
-          onPointerUpdate={e => ee.emit(e)}
-          xDomain={{ min: range[0] * 1000, max: range[1] * 1000 }}
-          onBrushEnd={handleBrushEnd}
-          onLegendItemClick={handleLegendItemClick}
-        />
-        <Axis
-          id="bottom"
-          position={Position.Bottom}
-          showOverlappingTicks
-          tickFormat={timeTickFormatter(range)}
-        />
-        <Axis
-          id="left"
-          position={Position.Left}
-          showOverlappingTicks
-          tickFormat={v => {
-            let _unit = unit || 'none'
-            if (toPrecisionUnits.includes(_unit) && v < 1) {
-              return v.toPrecision(3)
-            }
-            return getValueFormat(_unit)(v, 2)
-          }}
-          ticks={5}
-        />
-        {data?.values.map((qd, idx) => (
-          <React.Fragment key={idx}>{renderQueryData(qd)}</React.Fragment>
-        ))}
-        {data && (
-          <LineSeries // An empty series to avoid "no data" notice
-            id="_placeholder"
-            xScaleType={ScaleType.Time}
-            yScaleType={ScaleType.Linear}
-            xAccessor={0}
-            yAccessors={[1]}
-            hideInLegend
-            data={[
-              [data.meta.queryOptions.start * 1000, null],
-              [data.meta.queryOptions.end * 1000, null],
-            ]}
+      {isLoading && loadingComponent ? (
+        <div style={{ height }}>{loadingComponent()}</div>
+      ) : error && errorComponent ? (
+        <div style={{ height }}>{errorComponent(error)}</div>
+      ) : (
+        <Chart size={{ height }} ref={chartRef}>
+          <Settings
+            {...{ ...DEFAULT_CHART_SETTINGS, ...(chartSetting || {}) }}
+            pointerUpdateDebounce={0}
+            onPointerUpdate={e => ee.emit(e)}
+            xDomain={{ min: range[0] * 1000, max: range[1] * 1000 }}
+            onBrushEnd={handleBrushEnd}
+            onLegendItemClick={handleLegendItemClick}
           />
-        )}
-      </Chart>
+          <Axis
+            id="bottom"
+            position={Position.Bottom}
+            showOverlappingTicks
+            tickFormat={timeTickFormatter(range)}
+          />
+          <Axis
+            id="left"
+            position={Position.Left}
+            showOverlappingTicks
+            tickFormat={v => {
+              let _unit = unit || 'none'
+              if (toPrecisionUnits.includes(_unit) && v < 1) {
+                return v.toPrecision(3)
+              }
+              return getValueFormat(_unit)(v, 2)
+            }}
+            ticks={5}
+          />
+          {data?.values.map((qd, idx) => (
+            <React.Fragment key={idx}>{renderQueryData(qd)}</React.Fragment>
+          ))}
+          {data && (
+            <LineSeries // An empty series to avoid "no data" notice
+              id="_placeholder"
+              xScaleType={ScaleType.Time}
+              yScaleType={ScaleType.Linear}
+              xAccessor={0}
+              yAccessors={[1]}
+              hideInLegend
+              data={[
+                [data.meta.queryOptions.start * 1000, null],
+                [data.meta.queryOptions.end * 1000, null],
+              ]}
+            />
+          )}
+        </Chart>
+      )}
     </div>
   )
 }
