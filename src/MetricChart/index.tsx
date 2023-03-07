@@ -56,7 +56,7 @@ export interface IMetricChartProps {
   onLoading?: (isLoading: boolean) => void
   errorComponent?: (err: Error) => JSX.Element
   loadingComponent?: () => JSX.Element
-  noDataComponent?: () => JSX.Element
+  noDataComponent?: React.ReactNode
   onBrush?: (newRange: TimeRangeValue) => void
   onClickSeriesLabel?: (seriesName: string) => void
   chartSetting?: SettingsProps
@@ -250,7 +250,7 @@ const MetricsChart = ({
       ) : error && errorComponent ? (
         <div style={{ height }}>{errorComponent(error)}</div>
       ) : !data.values.length && !!noDataComponent ? (
-        <div style={{ height }}>{noDataComponent()}</div>
+        <div style={{ height }}>{noDataComponent}</div>
       ) : (
         <Chart size={{ height }} ref={chartRef}>
           <Settings
