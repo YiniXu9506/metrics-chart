@@ -23,3 +23,11 @@ import { MetricsChart, SyncChartContext } from 'metrics-chart'
     ))}
 </SyncChartPointer>
 ```
+
+## How to Publish Package
+
+```
+npm install
+npm run build
+npm publish --access public
+```
