@@ -264,13 +264,12 @@ const MetricsChart = ({
           <Axis
             id="bottom"
             position={Position.Bottom}
-            showOverlappingTicks
             tickFormat={timeTickFormatter(range)}
+            ticks={7}
           />
           <Axis
             id="left"
             position={Position.Left}
-            showOverlappingTicks
             tickFormat={v => {
               let _unit = unit || 'none'
               if (toPrecisionUnits.includes(_unit) && v < 1) {
