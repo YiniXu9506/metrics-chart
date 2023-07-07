@@ -15,6 +15,7 @@ import {
   LineSeries,
   BrushEvent,
   SettingsProps,
+  TickFormatter,
 } from '@elastic/charts'
 import { getValueFormat } from '@baurine/grafana-value-formats'
 import format from 'string-template'
@@ -66,6 +67,8 @@ export interface IMetricChartProps {
     startTimeSec: number
     stepSec: number
   }) => Promise<MetricsQueryResponse>
+  xAxisFormat?: TickFormatter
+  yAxisFormat?: TickFormatter
 }
 
 type Data = {
@@ -91,6 +94,8 @@ const MetricsChart = ({
   fetchPromeData,
   onClickSeriesLabel,
   chartSetting,
+  xAxisFormat,
+  yAxisFormat,
 }: IMetricChartProps) => {
   const chartRef = useRef<Chart>(null)
   const chartContainerRef = useRef<HTMLDivElement>(null)
@@ -264,19 +269,23 @@ const MetricsChart = ({
           <Axis
             id="bottom"
             position={Position.Bottom}
-            tickFormat={timeTickFormatter(range)}
+            tickFormat={xAxisFormat ? xAxisFormat : timeTickFormatter(range)}
             ticks={7}
           />
           <Axis
             id="left"
             position={Position.Left}
-            tickFormat={v => {
-              let _unit = unit || 'none'
-              if (toPrecisionUnits.includes(_unit) && v < 1) {
-                return v.toPrecision(3)
-              }
-              return getValueFormat(_unit)(v, 2)
-            }}
+            tickFormat={
+              yAxisFormat
+                ? yAxisFormat
+                : v => {
+                    let _unit = unit || 'none'
+                    if (toPrecisionUnits.includes(_unit) && v < 1) {
+                      return v.toPrecision(3)
+                    }
+                    return getValueFormat(_unit)(v, 2)
+                  }
+            }
             ticks={5}
           />
           {data?.values.map((qd, idx) => (
