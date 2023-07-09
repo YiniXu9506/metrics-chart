@@ -16,6 +16,7 @@ import {
   BrushEvent,
   SettingsProps,
   TickFormatter,
+  DomainRange,
 } from '@elastic/charts'
 import { getValueFormat } from '@baurine/grafana-value-formats'
 import format from 'string-template'
@@ -107,7 +108,9 @@ const MetricsChart = ({
   const toPrecisionUnits = ['short', 'none']
 
   const getQueryOptions = (range: TimeRangeValue): QueryOptions => {
-    const interval = chartHandle.calcIntervalSec(range)
+    const interval =
+      (chartSetting?.xDomain as DomainRange)?.minInterval / 1000 ||
+      chartHandle.calcIntervalSec(range)
     const rangeSnapshot = alignRange(range, interval) // Align the range according to calculated interval
     const queryOptions: QueryOptions = {
       start: rangeSnapshot[0],
@@ -259,12 +262,13 @@ const MetricsChart = ({
       ) : (
         <Chart size={{ height }} ref={chartRef}>
           <Settings
-            {...{ ...DEFAULT_CHART_SETTINGS, ...(chartSetting || {}) }}
+            {...DEFAULT_CHART_SETTINGS}
             pointerUpdateDebounce={0}
             onPointerUpdate={e => ee.emit(e)}
             xDomain={{ min: range[0] * 1000, max: range[1] * 1000 }}
             onBrushEnd={handleBrushEnd}
             onLegendItemClick={handleLegendItemClick}
+            {...(chartSetting || {})}
           />
           <Axis
             id="bottom"
