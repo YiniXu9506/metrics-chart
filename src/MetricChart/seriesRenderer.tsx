@@ -8,6 +8,7 @@ export function renderQueryData(qd: QueryData) {
       {qd.type === 'line' && <>{renderLine(qd)}</>}
       {qd.type === 'bar_stacked' && <>{renderStackedBar(qd)}</>}
       {qd.type === 'area_stack' && <>{renderAreaStack(qd)}</>}
+      {qd.type === 'area' && <>{renderArea(qd)}</>}
     </>
   )
 }
@@ -63,6 +64,22 @@ function renderAreaStack(qd: QueryData) {
       xAccessor={0}
       yAccessors={[1]}
       stackAccessors={[0]}
+      data={qd.data}
+      name={qd.name}
+      color={typeof qd.color === 'function' ? qd.color(qd.name) : qd.color}
+    />
+  )
+}
+
+function renderArea(qd: QueryData) {
+  return (
+    <AreaSeries
+      key={qd.id}
+      id={qd.id}
+      xScaleType={ScaleType.Time}
+      yScaleType={ScaleType.Linear}
+      xAccessor={0}
+      yAccessors={[1]}
       data={qd.data}
       name={qd.name}
       color={typeof qd.color === 'function' ? qd.color(qd.name) : qd.color}

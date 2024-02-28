@@ -1,4 +1,4 @@
-export type SeriesType = 'bar_stacked' | 'area_stack' | 'line'
+export type SeriesType = 'bar_stacked' | 'area_stack' | 'line' | 'area'
 
 export enum ColorType {
   BLUE_1 = '#C0D8FF',
