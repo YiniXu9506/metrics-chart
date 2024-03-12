@@ -1,3 +1,5 @@
+import { LineSeriesStyle, RecursivePartial } from '@elastic/charts'
+
 export type SeriesType = 'bar_stacked' | 'area_stack' | 'line' | 'area'
 
 export enum ColorType {
@@ -31,8 +33,9 @@ export type QueryData = {
   id: string
   name: string
   data: DataPoint[]
-  color?: ColorType | ((seriesName: string) => string | undefined)
   type?: SeriesType
+  color?: string | ((seriesName: string) => string | undefined)
+  lineSeriesStyle?: RecursivePartial<LineSeriesStyle>
 }
 
 export interface QueryOptions {
@@ -44,8 +47,9 @@ export interface QueryOptions {
 export interface QueryConfig {
   promql: string
   name: string
-  color?: ColorType | ((seriesName: string) => string | undefined)
   type: SeriesType
+  color?: string | ((seriesName: string) => string | undefined)
+  lineSeriesStyle?: RecursivePartial<LineSeriesStyle>
 }
 
 /**

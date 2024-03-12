@@ -49,6 +49,7 @@ function renderLine(qd: QueryData) {
         point: {
           visible: false,
         },
+        ...qd.lineSeriesStyle,
       }}
     />
   )

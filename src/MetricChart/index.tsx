@@ -211,6 +211,7 @@ const MetricsChart = ({
             data: transformedData,
             type: queries[queryIdx].type,
             color: queries[queryIdx].color,
+            lineSeriesStyle: queries[queryIdx].lineSeriesStyle,
           }
           sd.push(d)
         })
