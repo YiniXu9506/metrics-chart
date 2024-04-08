@@ -278,7 +278,17 @@ const MetricsChart = ({
             xDomain={{ min: range[0] * 1000, max: range[1] * 1000 }}
             onBrushEnd={handleBrushEnd}
             onLegendItemClick={handleLegendItemClick}
-            {...(chartSetting || {})}
+            {...({
+              ...chartSetting,
+              xDomain: chartSetting.xDomain
+                ? {
+                    ...chartSetting.xDomain,
+                    minInterval: fixMinInterval
+                      ? (chartSetting?.xDomain as DomainRange)?.minInterval
+                      : undefined,
+                  }
+                : undefined,
+            } || {})}
           />
           <Axis
             id="bottom"
