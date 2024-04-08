@@ -70,6 +70,9 @@ export interface IMetricChartProps {
   }) => Promise<MetricsQueryResponse>
   xAxisFormat?: TickFormatter
   yAxisFormat?: TickFormatter
+  // Fix min interval when `minInterval` was setting in the `chartSetting`, so that min interval will be fixed instead of auto computed by container size.
+  // `true` by default.
+  fixMinInterval?: boolean
 }
 
 type Data = {
@@ -97,6 +100,7 @@ const MetricsChart = ({
   chartSetting,
   xAxisFormat,
   yAxisFormat,
+  fixMinInterval = true,
 }: IMetricChartProps) => {
   const chartRef = useRef<Chart>(null)
   const chartContainerRef = useRef<HTMLDivElement>(null)
@@ -108,9 +112,14 @@ const MetricsChart = ({
   const toPrecisionUnits = ['short', 'none']
 
   const getQueryOptions = (range: TimeRangeValue): QueryOptions => {
-    const interval =
-      (chartSetting?.xDomain as DomainRange)?.minInterval / 1000 ||
-      chartHandle.calcIntervalSec(range)
+    const calcInterval = chartHandle.calcIntervalSec(range)
+    const settingInterval =
+      (chartSetting?.xDomain as DomainRange)?.minInterval / 1000 || calcInterval
+    const interval = fixMinInterval
+      ? settingInterval
+      : settingInterval > calcInterval
+      ? settingInterval
+      : calcInterval
     const rangeSnapshot = alignRange(range, interval) // Align the range according to calculated interval
     const queryOptions: QueryOptions = {
       start: rangeSnapshot[0],
