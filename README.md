@@ -12,16 +12,19 @@ npm install -S metrics-chart
 
 ```
 import { MetricsChart, SyncChartContext } from 'metrics-chart'
+import { MetricsChartTheme } from 'metrics-chart/theme'
 
-<SyncChartPointer>
-    {metricsList.map((metrics) => (
-        <MetricsChart
-            queries={m.metrics}
-            range={range}
-            ...
-        />
-    ))}
-</SyncChartPointer>
+<MetricsChartTheme value="light">
+    <SyncChartPointer>
+        {metricsList.map((metrics) => (
+            <MetricsChart
+                queries={m.metrics}
+                range={range}
+                ...
+            />
+        ))}
+    </SyncChartPointer>
+</MetricsChartTheme>
 ```
 
 ## How to Publish Package

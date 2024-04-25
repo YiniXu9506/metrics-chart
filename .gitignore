@@ -11,6 +11,7 @@
 # production
 /build
 dist
+src/.css
 
 # parcel cache
 .parcel-cache
