@@ -12,7 +12,10 @@ npm install -S metrics-chart
 
 ```
 import { MetricsChart, SyncChartContext } from 'metrics-chart'
-import { MetricsChartTheme } from 'metrics-chart/theme'
+import { MetricsChartTheme } from 'metrics-chart/dist/theme'
+
+import 'metrics-chart/dist/theme/light_theme.css'
+import 'metrics-chart/dist/theme/dark_theme.css'
 
 <MetricsChartTheme value="light">
     <SyncChartPointer>

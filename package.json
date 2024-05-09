@@ -1,18 +1,8 @@
 {
   "name": "metrics-chart",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "main": "dist/index.js",
   "types": "dist/types/index.d.ts",
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/types/index.d.ts"
-    },
-    "./theme": {
-      "import": "./dist/theme/index.js",
-      "types": "./dist/types/theme/index.d.ts"
-    }
-  },
   "targets": {
     "main": {
       "source": "src/index.ts",
