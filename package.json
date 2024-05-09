@@ -1,6 +1,6 @@
 {
   "name": "metrics-chart",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "main": "dist/index.js",
   "types": "dist/types/index.d.ts",
   "exports": {
@@ -37,7 +37,14 @@
         "src/light_theme.scss",
         "src/dark_theme.scss"
       ],
-      "distDir": "src/.css"
+      "distDir": ".css"
+    },
+    "css_theme": {
+      "source": [
+        ".css/light_theme.css",
+        ".css/dark_theme.css"
+      ],
+      "distDir": "dist/theme"
     }
   },
   "dependencies": {
@@ -63,15 +70,16 @@
     "typescript": "^4.7.4"
   },
   "peerDependencies": {
-    "@elastic/charts": "^46.10.1",
+    "@elastic/charts": "^47.2.1",
     "ahooks": "^3.7.0",
     "react": "^17.0.2",
     "react-dom": "^17.0.2"
   },
   "scripts": {
     "start": "npm run build:css && parcel start",
-    "build": "npm run build:css && npm run build:theme && parcel build --target main --no-optimize && npm run build:type",
+    "build": "npm run build:css && npm run build:css-theme && npm run build:theme && parcel build --target main --no-optimize && npm run build:type",
     "build:css": "parcel build --target scss2css",
+    "build:css-theme": "parcel build --target css_theme",
     "build:theme": "parcel build --target theme --no-optimize",
     "build:type": "npx -p typescript tsc --outDir dist/types",
     "build:analyze": "parcel build --reporter @parcel/reporter-bundle-analyzer"
