@@ -167,10 +167,12 @@ const MetricsChart = ({
           }
         }
         fillInto[fillIdx] = data
+        return true
       } catch (e) {
         fillInto[fillIdx] = null
         onError?.(e)
         setError(e)
+        return false
       }
     }
 
@@ -179,16 +181,20 @@ const MetricsChart = ({
       setIsLoading(true)
       setError(null)
       const dataSets: (PromMatrixData | null)[] = []
+      let allFailed = false
       try {
-        await Promise.all(
+        const ret = await Promise.all(
           queries.map((q, idx) => queryMetric(q.promql, idx, dataSets))
         )
+        allFailed = ret.every(v => !v)
       } finally {
         onLoading?.(false)
         setIsLoading(false)
       }
 
-      if (error && !!ignoreErrorData) {
+      // if all queries are failed and ignore error data
+      // then keep the previous results
+      if (allFailed && !!ignoreErrorData) {
         return
       }
 
