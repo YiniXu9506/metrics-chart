@@ -62,6 +62,7 @@ export interface IMetricChartProps {
   onBrush?: (newRange: TimeRangeValue) => void
   onClickSeriesLabel?: (seriesName: string) => void
   chartSetting?: SettingsProps
+  ignoreErrorData?: boolean
   fetchPromeData: (params: {
     endTimeSec: number
     query: string
@@ -95,6 +96,7 @@ const MetricsChart = ({
   errorComponent,
   loadingComponent,
   noDataComponent,
+  ignoreErrorData = false,
   fetchPromeData,
   onClickSeriesLabel,
   chartSetting,
@@ -184,6 +186,10 @@ const MetricsChart = ({
       } finally {
         onLoading?.(false)
         setIsLoading(false)
+      }
+
+      if (error && !!ignoreErrorData) {
+        return
       }
 
       // Transform response into data
