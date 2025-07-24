@@ -103,7 +103,8 @@ const MetricsChart = ({
   xAxisFormat,
   yAxisFormat,
   fixMinInterval = true,
-}: IMetricChartProps) => {
+  children,
+}: React.PropsWithChildren<IMetricChartProps>) => {
   const chartRef = useRef<Chart>(null)
   const chartContainerRef = useRef<HTMLDivElement>(null)
   const [chartHandle] = useChartHandle(chartContainerRef, 150)
@@ -324,6 +325,7 @@ const MetricsChart = ({
             }
             ticks={5}
           />
+          {children}
           {data?.values.map((qd, idx) => (
             <React.Fragment key={idx}>{renderQueryData(qd)}</React.Fragment>
           ))}
