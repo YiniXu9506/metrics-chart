@@ -70,7 +70,11 @@ export interface IMetricChartProps {
     stepSec: number
   }) => Promise<MetricsQueryResponse>
   xAxisFormat?: TickFormatter
+  xAxisDomain?: DomainRange
+  xAxisNice?: boolean
   yAxisFormat?: TickFormatter
+  yAxisNice?: boolean
+  yAxisDomain?: DomainRange
   // Fix min interval when `minInterval` was setting in the `chartSetting`, so that min interval will be fixed instead of auto computed by container size.
   // `true` by default.
   fixMinInterval?: boolean
@@ -101,7 +105,11 @@ const MetricsChart = ({
   onClickSeriesLabel,
   chartSetting,
   xAxisFormat,
+  xAxisNice,
+  xAxisDomain,
   yAxisFormat,
+  yAxisNice,
+  yAxisDomain,
   fixMinInterval = true,
   children,
 }: React.PropsWithChildren<IMetricChartProps>) => {
@@ -291,7 +299,7 @@ const MetricsChart = ({
             xDomain={{ min: range[0] * 1000, max: range[1] * 1000 }}
             onBrushEnd={handleBrushEnd}
             onLegendItemClick={handleLegendItemClick}
-            {...({
+            {...{
               ...chartSetting,
               xDomain: chartSetting.xDomain
                 ? {
@@ -301,17 +309,19 @@ const MetricsChart = ({
                       : undefined,
                   }
                 : undefined,
-            } || {})}
+            }}
           />
           <Axis
             id="bottom"
             position={Position.Bottom}
             tickFormat={xAxisFormat ? xAxisFormat : timeTickFormatter(range)}
             ticks={7}
+            domain={xAxisDomain}
           />
           <Axis
             id="left"
             position={Position.Left}
+            domain={yAxisDomain}
             tickFormat={
               yAxisFormat
                 ? yAxisFormat
@@ -327,7 +337,9 @@ const MetricsChart = ({
           />
           {children}
           {data?.values.map((qd, idx) => (
-            <React.Fragment key={idx}>{renderQueryData(qd)}</React.Fragment>
+            <React.Fragment key={idx}>
+              {renderQueryData(qd, xAxisNice, yAxisNice)}
+            </React.Fragment>
           ))}
           {data && (
             <LineSeries // An empty series to avoid "no data" notice
@@ -341,6 +353,8 @@ const MetricsChart = ({
                 [data.meta.queryOptions.start * 1000, null],
                 [data.meta.queryOptions.end * 1000, null],
               ]}
+              xNice={xAxisNice}
+              yNice={yAxisNice}
             />
           )}
         </Chart>
