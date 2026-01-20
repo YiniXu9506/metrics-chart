@@ -78,6 +78,10 @@ export interface IMetricChartProps {
   // Fix min interval when `minInterval` was setting in the `chartSetting`, so that min interval will be fixed instead of auto computed by container size.
   // `true` by default.
   fixMinInterval?: boolean
+  // Minimum bin width in pixels for calculating max data points. Smaller values allow more data points.
+  // Bar charts typically need larger values (e.g., 5) for visual clarity, while line charts can use smaller values (e.g., 1-2).
+  // Default is 5.
+  minBinWidth?: number
 }
 
 type Data = {
@@ -111,11 +115,12 @@ const MetricsChart = ({
   yAxisNice,
   yAxisDomain,
   fixMinInterval = true,
+  minBinWidth = 5,
   children,
 }: React.PropsWithChildren<IMetricChartProps>) => {
   const chartRef = useRef<Chart>(null)
   const chartContainerRef = useRef<HTMLDivElement>(null)
-  const [chartHandle] = useChartHandle(chartContainerRef, 150)
+  const [chartHandle] = useChartHandle(chartContainerRef, 150, minBinWidth)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
   const ee = useContext(SyncChartPointerContext)
