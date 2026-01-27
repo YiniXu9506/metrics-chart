@@ -123,6 +123,11 @@ const MetricsChart = ({
   const [chartHandle] = useChartHandle(chartContainerRef, 150, minBinWidth)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
+  // Track the minInterval for which data has been loaded to prevent xDomain/data mismatch
+  // Only minInterval needs to be synced - min/max are auto-calculated from data
+  const [committedMinInterval, setCommittedMinInterval] = useState<number | undefined>(
+    (chartSetting?.xDomain as DomainRange)?.minInterval
+  )
   const ee = useContext(SyncChartPointerContext)
   ee.useSubscription(e => chartRef.current?.dispatchExternalPointerEvent(e))
   const toPrecisionUnits = ['short', 'none']
@@ -157,6 +162,8 @@ const MetricsChart = ({
 
   useChange(() => {
     const queryOptions = getQueryOptions(range)
+    // Capture current xDomain settings at the start of fetch to avoid race conditions
+    const currentMinInterval = (chartSetting?.xDomain as DomainRange)?.minInterval
 
     async function queryMetric(
       queryTemplate: string,
@@ -257,6 +264,8 @@ const MetricsChart = ({
         },
         values: sd,
       })
+      // Update committed minInterval after data loads to keep it in sync with data
+      setCommittedMinInterval(currentMinInterval)
     }
 
     queryAllMetrics()
@@ -306,12 +315,10 @@ const MetricsChart = ({
             onLegendItemClick={handleLegendItemClick}
             {...{
               ...chartSetting,
-              xDomain: chartSetting.xDomain
+              xDomain: chartSetting?.xDomain
                 ? {
                     ...chartSetting.xDomain,
-                    minInterval: fixMinInterval
-                      ? (chartSetting?.xDomain as DomainRange)?.minInterval
-                      : undefined,
+                    minInterval: fixMinInterval ? committedMinInterval : undefined,
                   }
                 : undefined,
             }}
