@@ -1,5 +1,6 @@
 import {
   PartialTheme,
+  Position,
   SettingsProps,
   TickFormatter,
   timeFormatter,
@@ -7,11 +8,11 @@ import {
   TooltipStickTo,
   TooltipType,
   TooltipValue,
-  Position,
 } from '@elastic/charts'
-import { TimeRangeValue } from '../MetricChart/interfaces'
 import dayjs from 'dayjs'
-import React, { useRef } from 'react'
+import React, { useMemo } from 'react'
+
+import { TimeRangeValue } from '../MetricChart/interfaces'
 import { DEFAULT_MIN_INTERVAL_SEC } from './prometheus'
 import tz from './timezone'
 
@@ -19,19 +20,16 @@ import tz from './timezone'
  * A human readable tick label formatter for time series data. It scales according to the data domain.
  */
 export function timeTickFormatter(range: TimeRangeValue): TickFormatter {
-  // const minDate = moment(range[0] * 1000)
-  // const maxDate = moment(range[1] * 1000)
-  // const diff = maxDate.diff(minDate, 'minutes')
-
   const minDate = dayjs(range[0] * 1000)
   const maxDate = dayjs(range[1] * 1000)
   const diff = maxDate.diff(minDate, 'minutes')
-  const format = niceTimeFormatByDay(diff)
+  const tickFormat = niceTimeFormatByDay(diff)
+  const formatter = timeFormatter(tickFormat)
 
-  function formatter(v): string {
-    return timeFormatter(format)(v, { timeZone: tz.getTimeZoneStr() })
+  function tickFormatterFn(v): string {
+    return formatter(v, { timeZone: tz.getTimeZoneStr() })
   }
-  return formatter
+  return tickFormatterFn
 }
 
 function niceTimeFormatByDay(days: number) {
@@ -79,6 +77,8 @@ export const DEFAULT_THEME: PartialTheme = {
 }
 
 export const DEFAULT_CHART_SETTINGS: SettingsProps = {
+  animateData: false,
+  pointerUpdateDebounce: 24,
   showLegend: true,
   legendPosition: Position.Right,
   legendSize: 130,
@@ -113,18 +113,22 @@ export function useChartHandle(
   legendWidth: number = 0,
   minBinWidth: number = 5
 ): [ChartHandle] {
-  const chartRef = useRef<ChartHandle>({
-    calcIntervalSec: (range, minIntervalSec = DEFAULT_MIN_INTERVAL_SEC) => {
-      const maxDataPoints =
-        ((containerRef.current?.offsetWidth || 0) - legendWidth) / minBinWidth
-      if (maxDataPoints <= 0) {
-        return minIntervalSec
-      }
-      const interval = (range[1] - range[0]) / maxDataPoints
-      const roundedInterval =
-        Math.floor(interval / minIntervalSec) * minIntervalSec
-      return Math.max(minIntervalSec, roundedInterval)
-    },
-  })
-  return [chartRef.current]
+  const chartHandle = useMemo<ChartHandle>(
+    () => ({
+      calcIntervalSec: (range, minIntervalSec = DEFAULT_MIN_INTERVAL_SEC) => {
+        const maxDataPoints =
+          ((containerRef.current?.offsetWidth || 0) - legendWidth) / minBinWidth
+        if (maxDataPoints <= 0) {
+          return minIntervalSec
+        }
+        const interval = (range[1] - range[0]) / maxDataPoints
+        const roundedInterval =
+          Math.floor(interval / minIntervalSec) * minIntervalSec
+        return Math.max(minIntervalSec, roundedInterval)
+      },
+    }),
+    [containerRef, legendWidth, minBinWidth]
+  )
+
+  return [chartHandle]
 }

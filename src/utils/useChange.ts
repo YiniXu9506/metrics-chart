@@ -7,7 +7,7 @@ import { useDeepCompareEffect } from 'react-use'
 export function useChange(fn: () => any, changeList: DependencyList) {
   const mfn = useMemoizedFn(fn)
   useEffect(() => {
-    mfn()
+    return mfn()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, changeList)
 }
@@ -18,7 +18,7 @@ export function useDeepCompareChange(
 ) {
   const mfn = useMemoizedFn(fn)
   useDeepCompareEffect(() => {
-    mfn()
+    return mfn()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, changeList)
 }

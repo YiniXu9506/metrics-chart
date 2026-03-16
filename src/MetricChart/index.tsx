@@ -1,37 +1,40 @@
 import React, {
+  memo,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
   useRef,
   useState,
-  useContext,
-  useCallback,
-  useEffect,
 } from 'react'
 
 import {
-  Chart,
-  Settings,
-  Position,
   Axis,
-  ScaleType,
-  LineSeries,
   BrushEvent,
+  Chart,
+  DomainRange,
+  LineSeries,
+  Position,
+  ScaleType,
+  Settings,
   SettingsProps,
   TickFormatter,
-  DomainRange,
 } from '@elastic/charts'
 import { getValueFormat } from '@baurine/grafana-value-formats'
 import format from 'string-template'
 
 import {
-  TimeRangeValue,
-  QueryConfig,
-  TransformNullValue,
   MetricsQueryResponse,
-  QueryOptions,
+  QueryConfig,
   QueryData,
+  QueryOptions,
+  RenderMode,
+  TimeRangeValue,
+  TransformNullValue,
 } from './interfaces'
 import {
-  processRawData,
   PromMatrixData,
+  processRawData,
   resolveQueryTemplate,
 } from '../utils/prometheus'
 import {
@@ -40,11 +43,10 @@ import {
   timeTickFormatter,
   useChartHandle,
 } from '../utils/charts'
-
+import { enqueueRender } from '../utils/renderQueue'
 import tz from '../utils/timezone'
-
-import { useChange } from '../utils/useChange'
-import { renderQueryData } from './seriesRenderer'
+import { useDeepCompareChange } from '../utils/useChange'
+import { QuerySeries } from './seriesRenderer'
 import { SyncChartPointerContext } from './SyncChartPointerContext'
 
 export interface IMetricChartProps {
@@ -82,6 +84,10 @@ export interface IMetricChartProps {
   // Bar charts typically need larger values (e.g., 5) for visual clarity, while line charts can use smaller values (e.g., 1-2).
   // Default is 5.
   minBinWidth?: number
+  // Controls whether chart data should be committed immediately or serialized across multiple charts.
+  renderMode?: RenderMode
+  // Gap between serialized render commits in milliseconds.
+  renderCommitDelayMs?: number
 }
 
 type Data = {
@@ -90,6 +96,36 @@ type Data = {
   }
   values: QueryData[]
 }
+
+const TO_PRECISION_UNITS = new Set(['short', 'none'])
+
+const MemoizedSettings = memo((props: SettingsProps) => <Settings {...props} />)
+
+const MemoizedAxis = memo((props: React.ComponentProps<typeof Axis>) => (
+  <Axis {...props} />
+))
+
+type PlaceholderSeriesProps = {
+  data: [number, null][]
+  xAxisNice?: boolean
+  yAxisNice?: boolean
+}
+
+const PlaceholderSeries = memo(
+  ({ data, xAxisNice, yAxisNice }: PlaceholderSeriesProps) => (
+    <LineSeries
+      id="_placeholder"
+      xScaleType={ScaleType.Time}
+      yScaleType={ScaleType.Linear}
+      xAccessor={0}
+      yAccessors={[1]}
+      hideInLegend
+      data={data}
+      xNice={xAxisNice}
+      yNice={yAxisNice}
+    />
+  )
+)
 
 const MetricsChart = ({
   queries,
@@ -116,6 +152,8 @@ const MetricsChart = ({
   yAxisDomain,
   fixMinInterval = true,
   minBinWidth = 5,
+  renderMode = 'immediate',
+  renderCommitDelayMs = 16,
   children,
 }: React.PropsWithChildren<IMetricChartProps>) => {
   const chartRef = useRef<Chart>(null)
@@ -123,76 +161,78 @@ const MetricsChart = ({
   const [chartHandle] = useChartHandle(chartContainerRef, 150, minBinWidth)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
-  // Track the minInterval for which data has been loaded to prevent xDomain/data mismatch
-  // Only minInterval needs to be synced - min/max are auto-calculated from data
-  const [committedMinInterval, setCommittedMinInterval] = useState<number | undefined>(
-    (chartSetting?.xDomain as DomainRange)?.minInterval
-  )
   const ee = useContext(SyncChartPointerContext)
+
   ee.useSubscription(e => chartRef.current?.dispatchExternalPointerEvent(e))
-  const toPrecisionUnits = ['short', 'none']
 
-  const getQueryOptions = (range: TimeRangeValue): QueryOptions => {
-    const calcInterval = chartHandle.calcIntervalSec(range)
-    const settingInterval =
-      (chartSetting?.xDomain as DomainRange)?.minInterval / 1000 || calcInterval
-    const interval = fixMinInterval
-      ? settingInterval
-      : settingInterval > calcInterval
-      ? settingInterval
-      : calcInterval
-    const rangeSnapshot = alignRange(range, interval) // Align the range according to calculated interval
-    const queryOptions: QueryOptions = {
-      start: rangeSnapshot[0],
-      end: rangeSnapshot[1],
-      step: interval,
-    }
-    return queryOptions
-  }
+  const requestedMinInterval =
+    (chartSetting?.xDomain as DomainRange | undefined)?.minInterval
 
-  const [data, setData] = useState<Data | null>(() => {
-    const initData: Data = {
-      meta: {
-        queryOptions: getQueryOptions(range),
-      },
-      values: [],
-    }
-    return initData
-  })
+  const getQueryOptions = useCallback(
+    (nextRange: TimeRangeValue): QueryOptions => {
+      const calcInterval = chartHandle.calcIntervalSec(nextRange)
+      const settingInterval = requestedMinInterval
+        ? requestedMinInterval / 1000
+        : calcInterval
+      const interval = fixMinInterval
+        ? settingInterval
+        : settingInterval > calcInterval
+        ? settingInterval
+        : calcInterval
+      const rangeSnapshot = alignRange(nextRange, interval)
 
-  useChange(() => {
+      return {
+        start: rangeSnapshot[0],
+        end: rangeSnapshot[1],
+        step: interval,
+      }
+    },
+    [chartHandle, fixMinInterval, requestedMinInterval]
+  )
+
+  const [data, setData] = useState<Data | null>(() => ({
+    meta: {
+      queryOptions: getQueryOptions(range),
+    },
+    values: [],
+  }))
+
+  useDeepCompareChange(() => {
     const queryOptions = getQueryOptions(range)
-    // Capture current xDomain settings at the start of fetch to avoid race conditions
-    const currentMinInterval = (chartSetting?.xDomain as DomainRange)?.minInterval
+    const visibleRangeMs = [range[0] * 1000, range[1] * 1000] as TimeRangeValue
+    let active = true
+    let cancelScheduledCommit: (() => void) | undefined
 
     async function queryMetric(
-      queryTemplate: string,
+      queryConfig: QueryConfig,
       fillIdx: number,
       fillInto: (PromMatrixData | null)[]
     ) {
-      const query = resolveQueryTemplate(queryTemplate, queryOptions)
-      const pramas = {
+      const query = resolveQueryTemplate(queryConfig.promql, queryOptions)
+      const params = {
         endTimeSec: queryOptions.end,
-        query: query,
+        query,
         startTimeSec: queryOptions.start,
         stepSec: queryOptions.step,
       }
+
       try {
-        const resp = await fetchPromeData(pramas)
-        let data: PromMatrixData | null = null
+        const resp = await fetchPromeData(params)
+        let responseData: PromMatrixData | null = null
         if (resp.status === 'success') {
-          data = resp.data as any
-          if (data?.resultType !== 'matrix') {
-            // unsupported
-            data = null
+          responseData = resp.data as any
+          if (responseData?.resultType !== 'matrix') {
+            responseData = null
           }
         }
-        fillInto[fillIdx] = data
+        fillInto[fillIdx] = responseData
         return true
       } catch (e) {
         fillInto[fillIdx] = null
-        onError?.(e)
-        setError(e)
+        if (active) {
+          onError?.(e)
+          setError(e)
+        }
         return false
       }
     }
@@ -201,81 +241,110 @@ const MetricsChart = ({
       onLoading?.(true)
       setIsLoading(true)
       setError(null)
+
       const dataSets: (PromMatrixData | null)[] = []
       let allFailed = false
+
       try {
         const ret = await Promise.all(
-          queries.map((q, idx) => queryMetric(q.promql, idx, dataSets))
+          queries.map((queryConfig, idx) =>
+            queryMetric(queryConfig, idx, dataSets)
+          )
         )
         allFailed = ret.every(v => !v)
       } finally {
+        // keep loading state until the final render commit finishes
+      }
+
+      if (!active) {
+        return
+      }
+
+      if (allFailed && ignoreErrorData) {
+        onLoading?.(false)
+        setIsLoading(false)
+        return
+      }
+
+      const seriesData: QueryData[] = []
+      dataSets.forEach((matrixData, queryIdx) => {
+        if (!matrixData) {
+          return
+        }
+
+        const queryConfig = queries[queryIdx]
+        matrixData.result.forEach((promResult, seriesIdx) => {
+          const normalizedData = processRawData(
+            promResult,
+            queryOptions,
+            visibleRangeMs,
+            nullValue
+          )
+          if (normalizedData === null) {
+            return
+          }
+
+          seriesData.push({
+            id: `${queryIdx}_${seriesIdx}`,
+            name: format(queryConfig.name, promResult.metric),
+            data: normalizedData,
+            type: queryConfig.type,
+            color: queryConfig.color,
+            lineSeriesStyle: queryConfig.lineSeriesStyle,
+          })
+        })
+      })
+
+      if (!active) {
+        return
+      }
+
+      const commitRender = () => {
+        if (!active) {
+          return
+        }
+
+        setData({
+          meta: {
+            queryOptions,
+          },
+          values: seriesData,
+        })
         onLoading?.(false)
         setIsLoading(false)
       }
 
-      // if all queries are failed and ignore error data
-      // then keep the previous results
-      if (allFailed && !!ignoreErrorData) {
+      if (renderMode === 'serialized') {
+        cancelScheduledCommit = enqueueRender(commitRender, renderCommitDelayMs)
         return
       }
 
-      // Transform response into data
-      const sd: QueryData[] = []
-      const rangeMs = range.map(t => t * 1000)
-      dataSets.forEach((data, queryIdx) => {
-        if (!data) {
-          return
-        }
-        data.result.forEach((promResult, seriesIdx) => {
-          const data = processRawData(promResult, queryOptions)
-          if (data === null) {
-            return
-          }
-
-          const dataInTimeRange = data.filter(
-            d => d[0] >= rangeMs[0] && d[0] <= rangeMs[1]
-          )
-          // transform data according to nullValue config
-          const transformedData =
-            nullValue === TransformNullValue.AS_ZERO
-              ? dataInTimeRange.map(d => {
-                  if (d[1] !== null) {
-                    return d
-                  }
-                  d[1] = 0
-                  return d
-                })
-              : dataInTimeRange
-
-          const d: QueryData = {
-            id: `${queryIdx}_${seriesIdx}`,
-            name: format(queries[queryIdx].name, promResult.metric),
-            data: transformedData,
-            type: queries[queryIdx].type,
-            color: queries[queryIdx].color,
-            lineSeriesStyle: queries[queryIdx].lineSeriesStyle,
-          }
-          sd.push(d)
-        })
-      })
-      setData({
-        meta: {
-          queryOptions,
-        },
-        values: sd,
-      })
-      // Update committed minInterval after data loads to keep it in sync with data
-      setCommittedMinInterval(currentMinInterval)
+      commitRender()
     }
 
     queryAllMetrics()
-  }, [range])
+
+    return () => {
+      active = false
+      cancelScheduledCommit?.()
+    }
+  }, [
+    range,
+    queries,
+    nullValue,
+    ignoreErrorData,
+    fetchPromeData,
+    getQueryOptions,
+    onLoading,
+    renderCommitDelayMs,
+    renderMode,
+  ])
 
   useEffect(() => {
     if (typeof timezone === 'number') {
       tz.setTimeZone(timezone)
     }
-  }, [])
+  }, [timezone])
 
   const handleBrushEnd = useCallback(
     (ev: BrushEvent) => {
@@ -291,10 +360,106 @@ const MetricsChart = ({
     [onBrush]
   )
 
-  const handleLegendItemClick = e => {
-    const seriesName = e[0].specId
-    onClickSeriesLabel?.(seriesName)
-  }
+  const handleLegendItemClick = useCallback(
+    e => {
+      const seriesName = e[0].specId
+      onClickSeriesLabel?.(seriesName)
+    },
+    [onClickSeriesLabel]
+  )
+
+  const handlePointerUpdate = useCallback(
+    e => {
+      ee.emit(e)
+      chartSetting?.onPointerUpdate?.(e)
+    },
+    [chartSetting, ee]
+  )
+
+  const settingsProps = useMemo<SettingsProps>(
+    () => ({
+      ...DEFAULT_CHART_SETTINGS,
+      ...chartSetting,
+      animateData:
+        chartSetting?.animateData ?? DEFAULT_CHART_SETTINGS.animateData,
+      pointerUpdateDebounce:
+        chartSetting?.pointerUpdateDebounce ??
+        DEFAULT_CHART_SETTINGS.pointerUpdateDebounce,
+      onPointerUpdate: handlePointerUpdate,
+      onBrushEnd: ev => {
+        handleBrushEnd(ev)
+        chartSetting?.onBrushEnd?.(ev)
+      },
+      onLegendItemClick: ev => {
+        handleLegendItemClick(ev)
+        chartSetting?.onLegendItemClick?.(ev)
+      },
+      xDomain: {
+        ...chartSetting?.xDomain,
+        min: range[0] * 1000,
+        max: range[1] * 1000,
+        minInterval:
+          fixMinInterval && data ? data.meta.queryOptions.step * 1000 : undefined,
+      },
+    }),
+    [
+      chartSetting,
+      data,
+      fixMinInterval,
+      handleBrushEnd,
+      handleLegendItemClick,
+      handlePointerUpdate,
+      range,
+    ]
+  )
+
+  const xAxisTickFormat = useMemo(
+    () => xAxisFormat ?? timeTickFormatter(range),
+    [range, xAxisFormat]
+  )
+  const valueFormatter = useMemo(() => getValueFormat(unit || 'none'), [unit])
+  const defaultYAxisTickFormat = useCallback(
+    v => {
+      const currentUnit = unit || 'none'
+      if (TO_PRECISION_UNITS.has(currentUnit) && v < 1) {
+        return v.toPrecision(3)
+      }
+      return valueFormatter(v, 2)
+    },
+    [unit, valueFormatter]
+  )
+
+  const xAxisProps = useMemo(
+    () => ({
+      id: 'bottom',
+      position: Position.Bottom,
+      tickFormat: xAxisTickFormat,
+      ticks: 7,
+      domain: xAxisDomain,
+    }),
+    [xAxisDomain, xAxisTickFormat]
+  )
+  const yAxisProps = useMemo(
+    () => ({
+      id: 'left',
+      position: Position.Left,
+      domain: yAxisDomain,
+      tickFormat: yAxisFormat ?? defaultYAxisTickFormat,
+      ticks: 5,
+    }),
+    [defaultYAxisTickFormat, yAxisDomain, yAxisFormat]
+  )
+  const chartSize = useMemo(() => ({ height }), [height])
+  const placeholderData = useMemo<[number, null][]>(
+    () =>
+      data
+        ? [
+            [data.meta.queryOptions.start * 1000, null],
+            [data.meta.queryOptions.end * 1000, null],
+          ]
+        : [],
+    [data]
+  )
 
   return (
     <div ref={chartContainerRef}>
@@ -305,68 +470,24 @@ const MetricsChart = ({
       ) : !data.values.length && !!noDataComponent ? (
         <div style={{ height }}>{noDataComponent}</div>
       ) : (
-        <Chart size={{ height }} ref={chartRef}>
-          <Settings
-            {...DEFAULT_CHART_SETTINGS}
-            pointerUpdateDebounce={0}
-            onPointerUpdate={e => ee.emit(e)}
-            xDomain={{ min: range[0] * 1000, max: range[1] * 1000 }}
-            onBrushEnd={handleBrushEnd}
-            onLegendItemClick={handleLegendItemClick}
-            {...{
-              ...chartSetting,
-              xDomain: chartSetting?.xDomain
-                ? {
-                    ...chartSetting.xDomain,
-                    minInterval: fixMinInterval ? committedMinInterval : undefined,
-                  }
-                : undefined,
-            }}
-          />
-          <Axis
-            id="bottom"
-            position={Position.Bottom}
-            tickFormat={xAxisFormat ? xAxisFormat : timeTickFormatter(range)}
-            ticks={7}
-            domain={xAxisDomain}
-          />
-          <Axis
-            id="left"
-            position={Position.Left}
-            domain={yAxisDomain}
-            tickFormat={
-              yAxisFormat
-                ? yAxisFormat
-                : v => {
-                    let _unit = unit || 'none'
-                    if (toPrecisionUnits.includes(_unit) && v < 1) {
-                      return v.toPrecision(3)
-                    }
-                    return getValueFormat(_unit)(v, 2)
-                  }
-            }
-            ticks={5}
-          />
+        <Chart size={chartSize} ref={chartRef}>
+          <MemoizedSettings {...settingsProps} />
+          <MemoizedAxis {...xAxisProps} />
+          <MemoizedAxis {...yAxisProps} />
           {children}
-          {data?.values.map((qd, idx) => (
-            <React.Fragment key={idx}>
-              {renderQueryData(qd, xAxisNice, yAxisNice)}
-            </React.Fragment>
+          {data?.values.map(qd => (
+            <QuerySeries
+              key={qd.id}
+              qd={qd}
+              xAxisNice={xAxisNice}
+              yAxisNice={yAxisNice}
+            />
           ))}
           {data && (
-            <LineSeries // An empty series to avoid "no data" notice
-              id="_placeholder"
-              xScaleType={ScaleType.Time}
-              yScaleType={ScaleType.Linear}
-              xAccessor={0}
-              yAccessors={[1]}
-              hideInLegend
-              data={[
-                [data.meta.queryOptions.start * 1000, null],
-                [data.meta.queryOptions.end * 1000, null],
-              ]}
-              xNice={xAxisNice}
-              yNice={yAxisNice}
+            <PlaceholderSeries
+              data={placeholderData}
+              xAxisNice={xAxisNice}
+              yAxisNice={yAxisNice}
             />
           )}
         </Chart>

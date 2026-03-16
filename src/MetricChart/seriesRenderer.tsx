@@ -1,34 +1,35 @@
-import { BarSeries, LineSeries, ScaleType, AreaSeries } from '@elastic/charts'
-import { QueryData } from './interfaces'
-import React from 'react'
+import {
+  AreaSeries,
+  BarSeries,
+  LineSeries,
+  ScaleType,
+} from '@elastic/charts'
+import React, { memo, useMemo } from 'react'
 
-export function renderQueryData(
-  qd: QueryData,
-  xAxisNice: boolean,
-  yAxisNice: boolean
-) {
-  return (
-    <>
-      {qd.type === 'line' && <>{renderLine(qd, xAxisNice, yAxisNice)}</>}
-      {qd.type === 'bar_stacked' && (
-        <>{renderStackedBar(qd, xAxisNice, yAxisNice)}</>
-      )}
-      {qd.type === 'area_stack' && (
-        <>{renderAreaStack(qd, xAxisNice, yAxisNice)}</>
-      )}
-      {qd.type === 'area' && <>{renderArea(qd, xAxisNice, yAxisNice)}</>}
-    </>
-  )
+import { QueryData } from './interfaces'
+
+const DEFAULT_LINE_SERIES_STYLE = {
+  line: {
+    strokeWidth: 2,
+  },
+  point: {
+    visible: false,
+  },
+}
+
+type QuerySeriesProps = {
+  qd: QueryData
+  xAxisNice?: boolean
+  yAxisNice?: boolean
 }
 
 function renderStackedBar(
   qd: QueryData,
-  xAxisNice: boolean,
-  yAxisNice: boolean
+  xAxisNice?: boolean,
+  yAxisNice?: boolean
 ) {
   return (
     <BarSeries
-      key={qd.id}
       id={qd.id}
       xScaleType={ScaleType.Time}
       yScaleType={ScaleType.Linear}
@@ -44,10 +45,14 @@ function renderStackedBar(
   )
 }
 
-function renderLine(qd: QueryData, xAxisNice: boolean, yAxisNice: boolean) {
+function renderLine(
+  qd: QueryData,
+  xAxisNice?: boolean,
+  yAxisNice?: boolean,
+  lineSeriesStyle?: QueryData['lineSeriesStyle']
+) {
   return (
     <LineSeries
-      key={qd.id}
       id={qd.id}
       xScaleType={ScaleType.Time}
       yScaleType={ScaleType.Linear}
@@ -58,27 +63,18 @@ function renderLine(qd: QueryData, xAxisNice: boolean, yAxisNice: boolean) {
       data={qd.data}
       name={qd.name}
       color={typeof qd.color === 'function' ? qd.color(qd.name) : qd.color}
-      lineSeriesStyle={{
-        line: {
-          strokeWidth: 2,
-        },
-        point: {
-          visible: false,
-        },
-        ...qd.lineSeriesStyle,
-      }}
+      lineSeriesStyle={lineSeriesStyle}
     />
   )
 }
 
 function renderAreaStack(
   qd: QueryData,
-  xAxisNice: boolean,
-  yAxisNice: boolean
+  xAxisNice?: boolean,
+  yAxisNice?: boolean
 ) {
   return (
     <AreaSeries
-      key={qd.id}
       id={qd.id}
       xScaleType={ScaleType.Time}
       yScaleType={ScaleType.Linear}
@@ -94,10 +90,9 @@ function renderAreaStack(
   )
 }
 
-function renderArea(qd: QueryData, xAxisNice: boolean, yAxisNice: boolean) {
+function renderArea(qd: QueryData, xAxisNice?: boolean, yAxisNice?: boolean) {
   return (
     <AreaSeries
-      key={qd.id}
       id={qd.id}
       xScaleType={ScaleType.Time}
       yScaleType={ScaleType.Linear}
@@ -111,3 +106,27 @@ function renderArea(qd: QueryData, xAxisNice: boolean, yAxisNice: boolean) {
     />
   )
 }
+
+export const QuerySeries = memo(
+  ({ qd, xAxisNice, yAxisNice }: QuerySeriesProps) => {
+    const lineSeriesStyle = useMemo(
+      () => ({
+        ...DEFAULT_LINE_SERIES_STYLE,
+        ...qd.lineSeriesStyle,
+      }),
+      [qd.lineSeriesStyle]
+    )
+
+    switch (qd.type) {
+      case 'bar_stacked':
+        return renderStackedBar(qd, xAxisNice, yAxisNice)
+      case 'area_stack':
+        return renderAreaStack(qd, xAxisNice, yAxisNice)
+      case 'area':
+        return renderArea(qd, xAxisNice, yAxisNice)
+      case 'line':
+      default:
+        return renderLine(qd, xAxisNice, yAxisNice, lineSeriesStyle)
+    }
+  }
+)

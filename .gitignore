@@ -12,6 +12,7 @@
 /build
 dist
 .css
+storybook-static
 
 # parcel cache
 .parcel-cache
