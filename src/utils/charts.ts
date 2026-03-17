@@ -10,7 +10,7 @@ import {
   TooltipValue,
 } from '@elastic/charts'
 import dayjs from 'dayjs'
-import React, { useMemo } from 'react'
+import React, { useRef } from 'react'
 
 import { TimeRangeValue } from '../MetricChart/interfaces'
 import { DEFAULT_MIN_INTERVAL_SEC } from './prometheus'
@@ -23,13 +23,12 @@ export function timeTickFormatter(range: TimeRangeValue): TickFormatter {
   const minDate = dayjs(range[0] * 1000)
   const maxDate = dayjs(range[1] * 1000)
   const diff = maxDate.diff(minDate, 'minutes')
-  const tickFormat = niceTimeFormatByDay(diff)
-  const formatter = timeFormatter(tickFormat)
+  const format = niceTimeFormatByDay(diff)
 
-  function tickFormatterFn(v): string {
-    return formatter(v, { timeZone: tz.getTimeZoneStr() })
+  function formatter(v): string {
+    return timeFormatter(format)(v, { timeZone: tz.getTimeZoneStr() })
   }
-  return tickFormatterFn
+  return formatter
 }
 
 function niceTimeFormatByDay(days: number) {
@@ -77,7 +76,6 @@ export const DEFAULT_THEME: PartialTheme = {
 }
 
 export const DEFAULT_CHART_SETTINGS: SettingsProps = {
-  animateData: false,
   pointerUpdateDebounce: 24,
   showLegend: true,
   legendPosition: Position.Right,
@@ -113,22 +111,18 @@ export function useChartHandle(
   legendWidth: number = 0,
   minBinWidth: number = 5
 ): [ChartHandle] {
-  const chartHandle = useMemo<ChartHandle>(
-    () => ({
-      calcIntervalSec: (range, minIntervalSec = DEFAULT_MIN_INTERVAL_SEC) => {
-        const maxDataPoints =
-          ((containerRef.current?.offsetWidth || 0) - legendWidth) / minBinWidth
-        if (maxDataPoints <= 0) {
-          return minIntervalSec
-        }
-        const interval = (range[1] - range[0]) / maxDataPoints
-        const roundedInterval =
-          Math.floor(interval / minIntervalSec) * minIntervalSec
-        return Math.max(minIntervalSec, roundedInterval)
-      },
-    }),
-    [containerRef, legendWidth, minBinWidth]
-  )
-
-  return [chartHandle]
+  const chartRef = useRef<ChartHandle>({
+    calcIntervalSec: (range, minIntervalSec = DEFAULT_MIN_INTERVAL_SEC) => {
+      const maxDataPoints =
+        ((containerRef.current?.offsetWidth || 0) - legendWidth) / minBinWidth
+      if (maxDataPoints <= 0) {
+        return minIntervalSec
+      }
+      const interval = (range[1] - range[0]) / maxDataPoints
+      const roundedInterval =
+        Math.floor(interval / minIntervalSec) * minIntervalSec
+      return Math.max(minIntervalSec, roundedInterval)
+    },
+  })
+  return [chartRef.current]
 }

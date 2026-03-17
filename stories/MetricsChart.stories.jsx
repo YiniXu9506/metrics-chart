@@ -297,9 +297,9 @@ export default {
   },
   argTypes: {
     animateData: { control: 'boolean' },
-    chartCount: { control: { type: 'range', min: 1, max: 4, step: 1 } },
+    chartCount: { control: { type: 'range', min: 1, max: 12, step: 1 } },
     queryCount: { control: { type: 'range', min: 1, max: 8, step: 1 } },
-    seriesPerQuery: { control: { type: 'range', min: 1, max: 40, step: 1 } },
+    seriesPerQuery: { control: { type: 'range', min: 1, max: 256, step: 1 } },
     pointsPerSeries: {
       control: { type: 'range', min: 200, max: 6000, step: 100 },
     },
@@ -355,5 +355,19 @@ export const SerializedCommit = {
     missingEvery: 0,
     renderMode: 'serialized',
     renderCommitDelayMs: 32,
+  },
+}
+
+export const TenCharts128Series300Points = {
+  args: {
+    chartCount: 10,
+    queryCount: 1,
+    seriesPerQuery: 128,
+    pointsPerSeries: 300,
+    stepSec: 30,
+    missingEvery: 0,
+    height: 220,
+    renderMode: 'serialized',
+    renderCommitDelayMs: 16,
   },
 }
