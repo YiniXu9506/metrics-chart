@@ -1,0 +1,74 @@
+name: Create Bump Version
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: bump-version-main
+  cancel-in-progress: false
+
+jobs:
+  bump-version:
+    if: "${{ !startsWith(github.event.head_commit.message, 'chore(release): bump version to ') }}"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out latest main
+        uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Skip stale push events
+        id: freshness
+        run: |
+          current_sha="$(git rev-parse HEAD)"
+          if [ "$current_sha" != "${GITHUB_SHA}" ]; then
+            echo "should_bump=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping stale push. current=$current_sha event=${GITHUB_SHA}"
+            exit 0
+          fi
+
+          echo "should_bump=true" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Node.js
+        if: "${{ steps.freshness.outputs.should_bump == 'true' }}"
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Bump patch version
+        if: "${{ steps.freshness.outputs.should_bump == 'true' }}"
+        id: version
+        run: |
+          old_version="$(node -p "require('./package.json').version")"
+          npm version patch --no-git-tag-version
+          new_version="$(node -p "require('./package.json').version")"
+
+          echo "old_version=$old_version" >> "$GITHUB_OUTPUT"
+          echo "new_version=$new_version" >> "$GITHUB_OUTPUT"
+
+      - name: Create bump version PR
+        if: "${{ steps.freshness.outputs.should_bump == 'true' }}"
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ github.token }}
+          commit-message: "chore(release): bump version to v${{ steps.version.outputs.new_version }}"
+          branch: ci/bump-version
+          delete-branch: true
+          title: "chore(release): bump version to v${{ steps.version.outputs.new_version }}"
+          body: |
+            Automated version bump after changes were merged to `main`.
+
+            This PR updates:
+            - `package.json`
+            - `package-lock.json`
+
+            New version: `v${{ steps.version.outputs.new_version }}`
+          base: main
