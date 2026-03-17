@@ -99,12 +99,6 @@ type Data = {
 
 const TO_PRECISION_UNITS = new Set(['short', 'none'])
 
-const MemoizedSettings = memo((props: SettingsProps) => <Settings {...props} />)
-
-const MemoizedAxis = memo((props: React.ComponentProps<typeof Axis>) => (
-  <Axis {...props} />
-))
-
 type PlaceholderSeriesProps = {
   data: [number, null][]
   xAxisNice?: boolean
@@ -471,9 +465,9 @@ const MetricsChart = ({
         <div style={{ height }}>{noDataComponent}</div>
       ) : (
         <Chart size={chartSize} ref={chartRef}>
-          <MemoizedSettings {...settingsProps} />
-          <MemoizedAxis {...xAxisProps} />
-          <MemoizedAxis {...yAxisProps} />
+          <Settings {...settingsProps} />
+          <Axis {...xAxisProps} />
+          <Axis {...yAxisProps} />
           {children}
           {data?.values.map(qd => (
             <QuerySeries
