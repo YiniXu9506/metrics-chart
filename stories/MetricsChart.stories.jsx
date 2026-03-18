@@ -91,6 +91,16 @@ function createMockFetcher(seriesPerQuery, missingEvery) {
   }
 }
 
+function createEmptyMockFetcher() {
+  return async () => ({
+    status: 'success',
+    data: {
+      resultType: 'matrix',
+      result: [],
+    },
+  })
+}
+
 function buildSeriesValues(
   queryIdx,
   seriesIdx,
@@ -274,6 +284,79 @@ function StressHarness({
   )
 }
 
+function EmptyStateHarness() {
+  const range = useMemo(() => buildRange(300, 30), [])
+  const queries = useMemo(() => buildQueries(1), [])
+  const fetchPromeData = useMemo(() => createEmptyMockFetcher(), [])
+
+  return (
+    <MetricsChartTheme value="light">
+      <div
+        style={{
+          border: '1px solid rgba(50, 116, 217, 0.12)',
+          borderRadius: 18,
+          background: '#fff',
+          boxShadow: '0 14px 36px rgba(18, 52, 86, 0.08)',
+          padding: 16,
+        }}
+      >
+        <MetricsChart
+          queries={queries}
+          range={range}
+          height={260}
+          unit="none"
+          fetchPromeData={fetchPromeData}
+          noDataComponent={
+            <div
+              style={{
+                height: 260,
+                display: 'grid',
+                placeItems: 'center',
+                color: '#6b7c93',
+                fontFamily: 'Menlo, Monaco, Consolas, monospace',
+                fontSize: 14,
+                background:
+                  'linear-gradient(180deg, rgba(245,249,255,0.9) 0%, rgba(236,243,252,0.95) 100%)',
+                borderRadius: 12,
+              }}
+            >
+              No data
+            </div>
+          }
+        />
+      </div>
+    </MetricsChartTheme>
+  )
+}
+
+function PlaceholderHarness() {
+  const range = useMemo(() => buildRange(300, 30), [])
+  const queries = useMemo(() => buildQueries(1), [])
+  const fetchPromeData = useMemo(() => createEmptyMockFetcher(), [])
+
+  return (
+    <MetricsChartTheme value="light">
+      <div
+        style={{
+          border: '1px solid rgba(50, 116, 217, 0.12)',
+          borderRadius: 18,
+          background: '#fff',
+          boxShadow: '0 14px 36px rgba(18, 52, 86, 0.08)',
+          padding: 16,
+        }}
+      >
+        <MetricsChart
+          queries={queries}
+          range={range}
+          height={260}
+          unit="none"
+          fetchPromeData={fetchPromeData}
+        />
+      </div>
+    </MetricsChartTheme>
+  )
+}
+
 export default {
   title: 'Stress/MetricsChart',
   component: StressHarness,
@@ -370,4 +453,12 @@ export const TenCharts128Series300Points = {
     renderMode: 'serialized',
     renderCommitDelayMs: 16,
   },
+}
+
+export const EmptyState = {
+  render: () => <EmptyStateHarness />,
+}
+
+export const PlaceholderOnly = {
+  render: () => <PlaceholderHarness />,
 }

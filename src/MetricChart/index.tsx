@@ -1,4 +1,10 @@
-import React, { useCallback, useContext, useEffect, useRef, useState } from 'react'
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
 
 import {
   Axis,
@@ -151,8 +157,9 @@ const MetricsChart = ({
 
   useChange(() => {
     const queryOptions = getQueryOptions(range)
-    const currentMinInterval = (chartSetting?.xDomain as DomainRange | undefined)
-      ?.minInterval
+    const currentMinInterval = (
+      chartSetting?.xDomain as DomainRange | undefined
+    )?.minInterval
     let active = true
     let cancelScheduledCommit: (() => void) | undefined
 
@@ -346,7 +353,9 @@ const MetricsChart = ({
                     min: range[0] * 1000,
                     max: range[1] * 1000,
                     ...chartSetting.xDomain,
-                    minInterval: fixMinInterval ? committedMinInterval : undefined,
+                    minInterval: fixMinInterval
+                      ? committedMinInterval
+                      : undefined,
                   }
                 : { min: range[0] * 1000, max: range[1] * 1000 },
             }}
@@ -381,7 +390,7 @@ const MetricsChart = ({
               {renderQueryData(qd, xAxisNice, yAxisNice)}
             </React.Fragment>
           ))}
-          {data && (
+          {data && data.values.length === 0 && !noDataComponent && (
             <LineSeries
               id="_placeholder"
               xScaleType={ScaleType.Time}
