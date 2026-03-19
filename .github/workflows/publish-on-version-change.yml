@@ -1,0 +1,76 @@
+name: Publish To npm
+
+on:
+  workflow_dispatch:
+    inputs:
+      git_ref:
+        description: Git ref to publish from, defaults to main
+        required: false
+        default: main
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: publish-npm-manual
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.git_ref || 'main' }}
+          fetch-depth: 1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+          cache: npm
+
+      - name: Read package metadata
+        id: version
+        run: |
+          current_version="$(node -p "require('./package.json').version")"
+          current_name="$(node -p "require('./package.json').name")"
+
+          echo "package_name=$current_name" >> "$GITHUB_OUTPUT"
+          echo "current_version=$current_version" >> "$GITHUB_OUTPUT"
+
+      - name: Skip already-published versions
+        id: published
+        env:
+          PACKAGE_NAME: ${{ steps.version.outputs.package_name }}
+          CURRENT_VERSION: ${{ steps.version.outputs.current_version }}
+        run: |
+          published_version="$(npm view "$PACKAGE_NAME" version --registry=https://registry.npmjs.org 2>/dev/null || true)"
+
+          echo "published_version=$published_version" >> "$GITHUB_OUTPUT"
+
+          if [ "$published_version" = "$CURRENT_VERSION" ]; then
+            echo "should_publish=false" >> "$GITHUB_OUTPUT"
+            echo "Version $CURRENT_VERSION is already on npm"
+            exit 0
+          fi
+
+          echo "should_publish=true" >> "$GITHUB_OUTPUT"
+
+      - name: Install dependencies
+        if: "${{ steps.published.outputs.should_publish == 'true' }}"
+        run: npm ci
+
+      - name: Build package
+        if: "${{ steps.published.outputs.should_publish == 'true' }}"
+        run: npm run build
+
+      - name: Publish to npm
+        if: "${{ steps.published.outputs.should_publish == 'true' }}"
+        run: npm publish --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

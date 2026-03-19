@@ -1,11 +1,12 @@
-import { BarSeries, LineSeries, ScaleType, AreaSeries } from '@elastic/charts'
-import { QueryData } from './interfaces'
+import { AreaSeries, BarSeries, LineSeries, ScaleType } from '@elastic/charts'
 import React from 'react'
+
+import { QueryData } from './interfaces'
 
 export function renderQueryData(
   qd: QueryData,
-  xAxisNice: boolean,
-  yAxisNice: boolean
+  xAxisNice?: boolean,
+  yAxisNice?: boolean
 ) {
   return (
     <>
@@ -23,8 +24,8 @@ export function renderQueryData(
 
 function renderStackedBar(
   qd: QueryData,
-  xAxisNice: boolean,
-  yAxisNice: boolean
+  xAxisNice?: boolean,
+  yAxisNice?: boolean
 ) {
   return (
     <BarSeries
@@ -44,7 +45,7 @@ function renderStackedBar(
   )
 }
 
-function renderLine(qd: QueryData, xAxisNice: boolean, yAxisNice: boolean) {
+function renderLine(qd: QueryData, xAxisNice?: boolean, yAxisNice?: boolean) {
   return (
     <LineSeries
       key={qd.id}
@@ -73,8 +74,8 @@ function renderLine(qd: QueryData, xAxisNice: boolean, yAxisNice: boolean) {
 
 function renderAreaStack(
   qd: QueryData,
-  xAxisNice: boolean,
-  yAxisNice: boolean
+  xAxisNice?: boolean,
+  yAxisNice?: boolean
 ) {
   return (
     <AreaSeries
@@ -94,7 +95,7 @@ function renderAreaStack(
   )
 }
 
-function renderArea(qd: QueryData, xAxisNice: boolean, yAxisNice: boolean) {
+function renderArea(qd: QueryData, xAxisNice?: boolean, yAxisNice?: boolean) {
   return (
     <AreaSeries
       key={qd.id}

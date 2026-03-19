@@ -1,5 +1,6 @@
 import {
   PartialTheme,
+  Position,
   SettingsProps,
   TickFormatter,
   timeFormatter,
@@ -7,11 +8,11 @@ import {
   TooltipStickTo,
   TooltipType,
   TooltipValue,
-  Position,
 } from '@elastic/charts'
-import { TimeRangeValue } from '../MetricChart/interfaces'
 import dayjs from 'dayjs'
 import React, { useRef } from 'react'
+
+import { TimeRangeValue } from '../MetricChart/interfaces'
 import { DEFAULT_MIN_INTERVAL_SEC } from './prometheus'
 import tz from './timezone'
 
@@ -19,10 +20,6 @@ import tz from './timezone'
  * A human readable tick label formatter for time series data. It scales according to the data domain.
  */
 export function timeTickFormatter(range: TimeRangeValue): TickFormatter {
-  // const minDate = moment(range[0] * 1000)
-  // const maxDate = moment(range[1] * 1000)
-  // const diff = maxDate.diff(minDate, 'minutes')
-
   const minDate = dayjs(range[0] * 1000)
   const maxDate = dayjs(range[1] * 1000)
   const diff = maxDate.diff(minDate, 'minutes')
@@ -79,6 +76,7 @@ export const DEFAULT_THEME: PartialTheme = {
 }
 
 export const DEFAULT_CHART_SETTINGS: SettingsProps = {
+  pointerUpdateDebounce: 24,
   showLegend: true,
   legendPosition: Position.Right,
   legendSize: 130,
