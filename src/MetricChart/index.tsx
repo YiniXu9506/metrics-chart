@@ -2,6 +2,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react'
@@ -81,6 +82,7 @@ export interface IMetricChartProps {
   yAxisDomain?: DomainRange
   yAxisScaleType?: YAxisScaleType
   logBase?: YAxisLogBase
+  yAxisLogMinLimit?: number
   fixMinInterval?: boolean
   minBinWidth?: number
   renderMode?: RenderMode
@@ -125,6 +127,23 @@ function normalizeDataPointForYAxis(
   return [timestamp, normalizedValue]
 }
 
+function getMinPositiveValue(values: QueryData[]): number | undefined {
+  let minPositive: number | undefined
+
+  values.forEach(series => {
+    series.data.forEach(([, value]) => {
+      if (value === null || value <= 0) {
+        return
+      }
+      if (minPositive === undefined || value < minPositive) {
+        minPositive = value
+      }
+    })
+  })
+
+  return minPositive
+}
+
 const MetricsChart = ({
   queries,
   range,
@@ -150,6 +169,7 @@ const MetricsChart = ({
   yAxisDomain,
   yAxisScaleType = 'linear',
   logBase = 'base10',
+  yAxisLogMinLimit,
   fixMinInterval = true,
   minBinWidth = 5,
   renderMode = 'immediate',
@@ -166,13 +186,6 @@ const MetricsChart = ({
   >((chartSetting?.xDomain as DomainRange | undefined)?.minInterval)
   const ee = useContext(SyncChartPointerContext)
   const resolvedYAxisScaleType = resolveYAxisScaleType(yAxisScaleType)
-  const resolvedYAxisDomain =
-    yAxisScaleType === 'log'
-      ? ({
-          ...(yAxisDomain ?? {}),
-          logBase: LOG_BASE_VALUE_MAP[logBase],
-        } as AxisProps['domain'])
-      : yAxisDomain
 
   ee.useSubscription(e => chartRef.current?.dispatchExternalPointerEvent(e))
 
@@ -201,6 +214,40 @@ const MetricsChart = ({
     },
     values: [],
   }))
+
+  const computedLogMinLimit = useMemo(() => {
+    if (yAxisScaleType !== 'log') {
+      return undefined
+    }
+
+    return getMinPositiveValue(data?.values ?? [])
+  }, [data?.values, yAxisScaleType])
+
+  const resolvedYAxisDomain = useMemo(() => {
+    if (yAxisScaleType !== 'log') {
+      return yAxisDomain
+    }
+
+    const domainMin =
+      yAxisDomain && yAxisDomain.min > 0 ? yAxisDomain.min : undefined
+    const logMinLimit =
+      yAxisLogMinLimit ??
+      (domainMin !== undefined && computedLogMinLimit !== undefined
+        ? Math.min(domainMin, computedLogMinLimit)
+        : domainMin ?? computedLogMinLimit)
+
+    return {
+      ...(yAxisDomain ?? {}),
+      logBase: LOG_BASE_VALUE_MAP[logBase],
+      ...(logMinLimit !== undefined ? { logMinLimit } : {}),
+    } as AxisProps['domain']
+  }, [
+    computedLogMinLimit,
+    logBase,
+    yAxisDomain,
+    yAxisLogMinLimit,
+    yAxisScaleType,
+  ])
 
   useChange(() => {
     const queryOptions = getQueryOptions(range)
