@@ -31,8 +31,8 @@
     },
     "css_theme": {
       "source": [
-        ".css/light_theme.css",
-        ".css/dark_theme.css"
+        "src/light_theme.scss",
+        "src/dark_theme.scss"
       ],
       "distDir": "dist/theme"
     }
@@ -73,14 +73,15 @@
   },
   "scripts": {
     "start": "npm run build:css && parcel start",
-    "build": "npm run build:css && npm run build:css-theme && npm run build:theme && parcel build --target main --no-optimize && npm run build:type",
-    "build:css": "parcel build --target scss2css",
-    "build:css-theme": "parcel build --target css_theme",
-    "build:theme": "parcel build --target theme --no-optimize",
+    "build": "npm run build:css && npm run build:css-theme && npm run build:js && npm run build:type",
+    "build:css": "node scripts/build-theme-css.mjs .css",
+    "build:css-theme": "node scripts/build-theme-css.mjs dist/theme",
+    "build:js": "node scripts/build-js.mjs",
+    "build:theme": "node scripts/build-js.mjs --theme-only",
     "build:type": "npx -p typescript tsc --outDir dist/types",
     "build:analyze": "parcel build --reporter @parcel/reporter-bundle-analyzer",
-    "storybook": "STORYBOOK_DISABLE_TELEMETRY=1 storybook dev -p 6006",
-    "build-storybook": "STORYBOOK_DISABLE_TELEMETRY=1 storybook build"
+    "storybook": "npm run build:css && STORYBOOK_DISABLE_TELEMETRY=1 storybook dev -p 6006",
+    "build-storybook": "npm run build:css && STORYBOOK_DISABLE_TELEMETRY=1 storybook build"
   },
   "eslintConfig": {
     "extends": [
