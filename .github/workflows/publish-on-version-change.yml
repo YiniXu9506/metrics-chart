@@ -1,6 +1,11 @@
 name: Publish To npm
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - package.json
   workflow_dispatch:
     inputs:
       git_ref:
@@ -13,7 +18,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: publish-npm-manual
+  group: publish-npm-${{ github.event_name }}-${{ github.event_name == 'workflow_dispatch' && inputs.git_ref || github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -24,8 +29,8 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v5
         with:
-          ref: ${{ inputs.git_ref || 'main' }}
-          fetch-depth: 1
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.git_ref || github.sha }}
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -43,7 +48,42 @@ jobs:
           echo "package_name=$current_name" >> "$GITHUB_OUTPUT"
           echo "current_version=$current_version" >> "$GITHUB_OUTPUT"
 
+      - name: Detect package.json version change on push
+        if: ${{ github.event_name == 'push' }}
+        id: trigger
+        env:
+          CURRENT_VERSION: ${{ steps.version.outputs.current_version }}
+          BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          if [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ]; then
+            echo "should_publish=true" >> "$GITHUB_OUTPUT"
+            echo "before_version=" >> "$GITHUB_OUTPUT"
+            echo "Initial push with package.json change detected"
+            exit 0
+          fi
+
+          before_version="$(git show "$BEFORE_SHA:package.json" | node -e "let input=''; process.stdin.on('data', chunk => input += chunk); process.stdin.on('end', () => process.stdout.write(JSON.parse(input).version));")"
+
+          echo "before_version=$before_version" >> "$GITHUB_OUTPUT"
+
+          if [ "$before_version" = "$CURRENT_VERSION" ]; then
+            echo "should_publish=false" >> "$GITHUB_OUTPUT"
+            echo "package.json changed, but version stayed at $CURRENT_VERSION"
+            exit 0
+          fi
+
+          echo "should_publish=true" >> "$GITHUB_OUTPUT"
+          echo "package.json version changed: $before_version -> $CURRENT_VERSION"
+
+      - name: Allow manual publish
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        id: trigger_manual
+        run: |
+          echo "should_publish=true" >> "$GITHUB_OUTPUT"
+          echo "Manual publish requested"
+
       - name: Skip already-published versions
+        if: ${{ (github.event_name == 'push' && steps.trigger.outputs.should_publish == 'true') || (github.event_name == 'workflow_dispatch' && steps.trigger_manual.outputs.should_publish == 'true') }}
         id: published
         env:
           PACKAGE_NAME: ${{ steps.version.outputs.package_name }}
@@ -62,13 +102,13 @@ jobs:
           echo "should_publish=true" >> "$GITHUB_OUTPUT"
 
       - name: Install dependencies
-        if: "${{ steps.published.outputs.should_publish == 'true' }}"
+        if: ${{ steps.published.outputs.should_publish == 'true' }}
         run: npm ci
 
       - name: Build package
-        if: "${{ steps.published.outputs.should_publish == 'true' }}"
+        if: ${{ steps.published.outputs.should_publish == 'true' }}
         run: npm run build
 
       - name: Publish to npm
-        if: "${{ steps.published.outputs.should_publish == 'true' }}"
+        if: ${{ steps.published.outputs.should_publish == 'true' }}
         run: npm publish --provenance
