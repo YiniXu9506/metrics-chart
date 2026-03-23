@@ -3,6 +3,14 @@
   "version": "1.0.25",
   "main": "dist/index.js",
   "types": "dist/types/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/YiniXu9506/metrics-chart"
+  },
+  "homepage": "https://github.com/YiniXu9506/metrics-chart",
+  "bugs": {
+    "url": "https://github.com/YiniXu9506/metrics-chart/issues"
+  },
   "targets": {
     "main": {
       "source": "src/index.ts",
