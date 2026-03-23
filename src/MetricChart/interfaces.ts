@@ -28,6 +28,8 @@ export enum TransformNullValue {
 }
 
 export type RenderMode = 'immediate' | 'serialized'
+export type YAxisScaleType = 'linear' | 'log'
+export type YAxisLogBase = 'base10' | 'base2' | 'baseE'
 
 export type TimeRangeValue = [minSecond: number, maxSecond: number] // unit: second
 export type DataPoint = [msTimestamp: number, value: number | null]

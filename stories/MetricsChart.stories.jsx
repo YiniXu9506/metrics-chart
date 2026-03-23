@@ -39,7 +39,7 @@ function hashString(input) {
   return hash
 }
 
-function createMockFetcher(seriesPerQuery, missingEvery) {
+function createMockFetcher(seriesPerQuery, missingEvery, valueMode = 'mixed') {
   const cache = new Map()
 
   return async ({ endTimeSec, query, startTimeSec, stepSec }) => {
@@ -50,6 +50,7 @@ function createMockFetcher(seriesPerQuery, missingEvery) {
       stepSec,
       seriesPerQuery,
       missingEvery,
+      valueMode,
     ].join(':')
 
     const cached = cache.get(cacheKey)
@@ -74,7 +75,8 @@ function createMockFetcher(seriesPerQuery, missingEvery) {
           startTimeSec,
           endTimeSec,
           stepSec,
-          missingEvery
+          missingEvery,
+          valueMode
         ),
       })
     }
@@ -107,7 +109,8 @@ function buildSeriesValues(
   startTimeSec,
   endTimeSec,
   stepSec,
-  missingEvery
+  missingEvery,
+  valueMode
 ) {
   const values = []
   let pointIdx = 0
@@ -117,12 +120,24 @@ function buildSeriesValues(
       continue
     }
 
-    const base = queryIdx * 12 + seriesIdx * 1.5
-    const wave =
-      Math.sin(pointIdx / (5 + queryIdx)) * 8 +
-      Math.cos(pointIdx / (7 + seriesIdx)) * 3
-    const drift = pointIdx * 0.015
-    values.push([ts, String(Number((base + wave + drift).toFixed(3)))])
+    let value
+    if (valueMode === 'positive') {
+      const base = 4 + queryIdx * 10 + seriesIdx * 1.25
+      const wave =
+        Math.abs(Math.sin(pointIdx / (4 + queryIdx))) * 18 +
+        Math.abs(Math.cos(pointIdx / (6 + seriesIdx))) * 6
+      const drift = 1 + pointIdx * 0.03
+      value = base + wave + drift
+    } else {
+      const base = queryIdx * 12 + seriesIdx * 1.5
+      const wave =
+        Math.sin(pointIdx / (5 + queryIdx)) * 8 +
+        Math.cos(pointIdx / (7 + seriesIdx)) * 3
+      const drift = pointIdx * 0.015
+      value = base + wave + drift
+    }
+
+    values.push([ts, String(Number(value.toFixed(3)))])
     pointIdx += 1
   }
   return values
@@ -357,6 +372,63 @@ function PlaceholderHarness() {
   )
 }
 
+function ScaleHarness({ yAxisScaleType, logBase }) {
+  const range = useMemo(() => buildRange(240, 60), [])
+  const queries = useMemo(() => buildQueries(2), [])
+  const fetchPromeData = useMemo(() => createMockFetcher(4, 0, 'positive'), [])
+  const chartSetting = useMemo(
+    () => ({
+      showLegend: true,
+      legendSize: 160,
+      xDomain: {
+        minInterval: 60 * 1000,
+      },
+    }),
+    []
+  )
+
+  return (
+    <MetricsChartTheme value="light">
+      <div
+        style={{
+          border: '1px solid rgba(50, 116, 217, 0.12)',
+          borderRadius: 18,
+          background: '#fff',
+          boxShadow: '0 14px 36px rgba(18, 52, 86, 0.08)',
+          padding: 16,
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 12,
+            fontFamily: 'Menlo, Monaco, Consolas, monospace',
+            fontSize: 12,
+            color: '#47607a',
+          }}
+        >
+          <span>Y Axis Scale Demo</span>
+          <span>
+            scale: {yAxisScaleType}, log base: {logBase}
+          </span>
+        </div>
+        <MetricsChart
+          queries={queries}
+          range={range}
+          height={320}
+          unit="short"
+          fetchPromeData={fetchPromeData}
+          chartSetting={chartSetting}
+          yAxisScaleType={yAxisScaleType}
+          logBase={logBase}
+        />
+      </div>
+    </MetricsChartTheme>
+  )
+}
+
 export default {
   title: 'Stress/MetricsChart',
   component: StressHarness,
@@ -461,4 +533,22 @@ export const EmptyState = {
 
 export const PlaceholderOnly = {
   render: () => <PlaceholderHarness />,
+}
+
+export const YAxisScale = {
+  render: args => <ScaleHarness {...args} />,
+  args: {
+    yAxisScaleType: 'linear',
+    logBase: 'base10',
+  },
+  argTypes: {
+    yAxisScaleType: {
+      control: { type: 'inline-radio' },
+      options: ['linear', 'log'],
+    },
+    logBase: {
+      control: { type: 'inline-radio' },
+      options: ['base10', 'base2', 'baseE'],
+    },
+  },
 }

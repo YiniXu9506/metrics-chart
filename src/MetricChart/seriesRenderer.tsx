@@ -3,21 +3,24 @@ import React from 'react'
 
 import { QueryData } from './interfaces'
 
+type YScaleType = typeof ScaleType.Linear | typeof ScaleType.Log
+
 export function renderQueryData(
   qd: QueryData,
   xAxisNice?: boolean,
-  yAxisNice?: boolean
+  yAxisNice?: boolean,
+  yScaleType: YScaleType = ScaleType.Linear
 ) {
   return (
     <>
-      {qd.type === 'line' && <>{renderLine(qd, xAxisNice, yAxisNice)}</>}
+      {qd.type === 'line' && <>{renderLine(qd, xAxisNice, yAxisNice, yScaleType)}</>}
       {qd.type === 'bar_stacked' && (
-        <>{renderStackedBar(qd, xAxisNice, yAxisNice)}</>
+        <>{renderStackedBar(qd, xAxisNice, yAxisNice, yScaleType)}</>
       )}
       {qd.type === 'area_stack' && (
-        <>{renderAreaStack(qd, xAxisNice, yAxisNice)}</>
+        <>{renderAreaStack(qd, xAxisNice, yAxisNice, yScaleType)}</>
       )}
-      {qd.type === 'area' && <>{renderArea(qd, xAxisNice, yAxisNice)}</>}
+      {qd.type === 'area' && <>{renderArea(qd, xAxisNice, yAxisNice, yScaleType)}</>}
     </>
   )
 }
@@ -25,14 +28,15 @@ export function renderQueryData(
 function renderStackedBar(
   qd: QueryData,
   xAxisNice?: boolean,
-  yAxisNice?: boolean
+  yAxisNice?: boolean,
+  yScaleType: YScaleType = ScaleType.Linear
 ) {
   return (
     <BarSeries
       key={qd.id}
       id={qd.id}
       xScaleType={ScaleType.Time}
-      yScaleType={ScaleType.Linear}
+      yScaleType={yScaleType}
       xAccessor={0}
       yAccessors={[1]}
       xNice={xAxisNice}
@@ -45,13 +49,18 @@ function renderStackedBar(
   )
 }
 
-function renderLine(qd: QueryData, xAxisNice?: boolean, yAxisNice?: boolean) {
+function renderLine(
+  qd: QueryData,
+  xAxisNice?: boolean,
+  yAxisNice?: boolean,
+  yScaleType: YScaleType = ScaleType.Linear
+) {
   return (
     <LineSeries
       key={qd.id}
       id={qd.id}
       xScaleType={ScaleType.Time}
-      yScaleType={ScaleType.Linear}
+      yScaleType={yScaleType}
       xAccessor={0}
       yAccessors={[1]}
       xNice={xAxisNice}
@@ -75,14 +84,15 @@ function renderLine(qd: QueryData, xAxisNice?: boolean, yAxisNice?: boolean) {
 function renderAreaStack(
   qd: QueryData,
   xAxisNice?: boolean,
-  yAxisNice?: boolean
+  yAxisNice?: boolean,
+  yScaleType: YScaleType = ScaleType.Linear
 ) {
   return (
     <AreaSeries
       key={qd.id}
       id={qd.id}
       xScaleType={ScaleType.Time}
-      yScaleType={ScaleType.Linear}
+      yScaleType={yScaleType}
       xAccessor={0}
       yAccessors={[1]}
       xNice={xAxisNice}
@@ -95,13 +105,18 @@ function renderAreaStack(
   )
 }
 
-function renderArea(qd: QueryData, xAxisNice?: boolean, yAxisNice?: boolean) {
+function renderArea(
+  qd: QueryData,
+  xAxisNice?: boolean,
+  yAxisNice?: boolean,
+  yScaleType: YScaleType = ScaleType.Linear
+) {
   return (
     <AreaSeries
       key={qd.id}
       id={qd.id}
       xScaleType={ScaleType.Time}
-      yScaleType={ScaleType.Linear}
+      yScaleType={yScaleType}
       xAccessor={0}
       yAccessors={[1]}
       xNice={xAxisNice}

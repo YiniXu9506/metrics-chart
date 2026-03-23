@@ -8,6 +8,7 @@ import React, {
 
 import {
   Axis,
+  AxisProps,
   BrushEvent,
   Chart,
   DomainRange,
@@ -22,6 +23,7 @@ import { getValueFormat } from '@baurine/grafana-value-formats'
 import format from 'string-template'
 
 import {
+  DataPoint,
   MetricsQueryResponse,
   QueryConfig,
   QueryData,
@@ -29,6 +31,8 @@ import {
   RenderMode,
   TimeRangeValue,
   TransformNullValue,
+  YAxisLogBase,
+  YAxisScaleType,
 } from './interfaces'
 import {
   PromMatrixData,
@@ -75,6 +79,8 @@ export interface IMetricChartProps {
   yAxisFormat?: TickFormatter
   yAxisNice?: boolean
   yAxisDomain?: DomainRange
+  yAxisScaleType?: YAxisScaleType
+  logBase?: YAxisLogBase
   fixMinInterval?: boolean
   minBinWidth?: number
   renderMode?: RenderMode
@@ -86,6 +92,37 @@ type Data = {
     queryOptions: QueryOptions
   }
   values: QueryData[]
+}
+
+const LOG_BASE_VALUE_MAP: Record<YAxisLogBase, number> = {
+  base10: 10,
+  base2: 2,
+  baseE: Math.E,
+}
+
+function resolveYAxisScaleType(
+  yAxisScaleType: YAxisScaleType
+): typeof ScaleType.Linear | typeof ScaleType.Log {
+  return yAxisScaleType === 'log' ? ScaleType.Log : ScaleType.Linear
+}
+
+function normalizeDataPointForYAxis(
+  point: DataPoint,
+  nullValue: TransformNullValue,
+  yAxisScaleType: YAxisScaleType
+): DataPoint {
+  const [timestamp, value] = point
+  const normalizedValue =
+    value === null && nullValue === TransformNullValue.AS_ZERO ? 0 : value
+
+  if (
+    yAxisScaleType === 'log' &&
+    (normalizedValue === null || normalizedValue <= 0)
+  ) {
+    return [timestamp, null]
+  }
+
+  return [timestamp, normalizedValue]
 }
 
 const MetricsChart = ({
@@ -111,6 +148,8 @@ const MetricsChart = ({
   yAxisFormat,
   yAxisNice,
   yAxisDomain,
+  yAxisScaleType = 'linear',
+  logBase = 'base10',
   fixMinInterval = true,
   minBinWidth = 5,
   renderMode = 'immediate',
@@ -126,6 +165,14 @@ const MetricsChart = ({
     number | undefined
   >((chartSetting?.xDomain as DomainRange | undefined)?.minInterval)
   const ee = useContext(SyncChartPointerContext)
+  const resolvedYAxisScaleType = resolveYAxisScaleType(yAxisScaleType)
+  const resolvedYAxisDomain =
+    yAxisScaleType === 'log'
+      ? ({
+          ...(yAxisDomain ?? {}),
+          logBase: LOG_BASE_VALUE_MAP[logBase],
+        } as AxisProps['domain'])
+      : yAxisDomain
 
   ee.useSubscription(e => chartRef.current?.dispatchExternalPointerEvent(e))
 
@@ -239,16 +286,9 @@ const MetricsChart = ({
           const dataInTimeRange = seriesData.filter(
             d => d[0] >= rangeMs[0] && d[0] <= rangeMs[1]
           )
-          const transformedData =
-            nullValue === TransformNullValue.AS_ZERO
-              ? dataInTimeRange.map(d => {
-                  if (d[1] !== null) {
-                    return d
-                  }
-                  d[1] = 0
-                  return d
-                })
-              : dataInTimeRange
+          const transformedData = dataInTimeRange.map(d =>
+            normalizeDataPointForYAxis(d, nullValue, yAxisScaleType)
+          )
 
           sd.push({
             id: `${queryIdx}_${seriesIdx}`,
@@ -370,7 +410,7 @@ const MetricsChart = ({
           <Axis
             id="left"
             position={Position.Left}
-            domain={yAxisDomain}
+            domain={resolvedYAxisDomain}
             tickFormat={
               yAxisFormat
                 ? yAxisFormat
@@ -387,23 +427,43 @@ const MetricsChart = ({
           {children}
           {data?.values.map((qd, idx) => (
             <React.Fragment key={idx}>
-              {renderQueryData(qd, xAxisNice, yAxisNice)}
+              {renderQueryData(
+                qd,
+                xAxisNice,
+                yAxisNice,
+                resolvedYAxisScaleType
+              )}
             </React.Fragment>
           ))}
           {data && data.values.length === 0 && !noDataComponent && (
             <LineSeries
               id="_placeholder"
               xScaleType={ScaleType.Time}
-              yScaleType={ScaleType.Linear}
+              yScaleType={resolvedYAxisScaleType}
               xAccessor={0}
               yAccessors={[1]}
               hideInLegend
+              color="transparent"
               data={[
-                [data.meta.queryOptions.start * 1000, null],
-                [data.meta.queryOptions.end * 1000, null],
+                [
+                  data.meta.queryOptions.start * 1000,
+                  yAxisScaleType === 'log' ? 1 : null,
+                ],
+                [
+                  data.meta.queryOptions.end * 1000,
+                  yAxisScaleType === 'log' ? 1 : null,
+                ],
               ]}
               xNice={xAxisNice}
               yNice={yAxisNice}
+              lineSeriesStyle={{
+                line: {
+                  strokeWidth: 0,
+                },
+                point: {
+                  visible: false,
+                },
+              }}
             />
           )}
         </Chart>
