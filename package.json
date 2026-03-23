@@ -14,27 +14,6 @@
         "react": false,
         "react-dom": false
       }
-    },
-    "theme": {
-      "source": "src/theme/index.tsx",
-      "distDir": "dist/theme",
-      "optimize": true,
-      "includeNodeModules": false,
-      "outputFormat": "commonjs"
-    },
-    "scss2css": {
-      "source": [
-        "src/light_theme.scss",
-        "src/dark_theme.scss"
-      ],
-      "distDir": ".css"
-    },
-    "css_theme": {
-      "source": [
-        "src/light_theme.scss",
-        "src/dark_theme.scss"
-      ],
-      "distDir": "dist/theme"
     }
   },
   "dependencies": {
