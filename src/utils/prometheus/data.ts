@@ -60,8 +60,12 @@ export function resolveQueryTemplate(
   template: string,
   options: QueryOptions
 ): string {
-  return template.replace(
-    /\$__rate_interval/g,
-    `${Math.max(options.step, 4 * DEFAULT_MIN_INTERVAL_SEC)}s`
-  )
+  const rangeSec = Math.max(options.end - options.start, 0)
+  const rateInterval = `${Math.max(options.step, 4 * DEFAULT_MIN_INTERVAL_SEC)}s`
+
+  return template
+    .replace(/\$__rate_interval/g, rateInterval)
+    .replace(/\$__range_ms/g, `${rangeSec * 1000}`)
+    .replace(/\$__range_s/g, `${rangeSec}`)
+    .replace(/\$__range/g, `${rangeSec}s`)
 }
