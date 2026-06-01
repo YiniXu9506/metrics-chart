@@ -11,7 +11,7 @@ import { DataPoint, QueryOptions } from '../../MetricChart/interfaces'
 const POSITIVE_INFINITY_SAMPLE_VALUE = '+Inf'
 const NEGATIVE_INFINITY_SAMPLE_VALUE = '-Inf'
 
-const GRAFANA_DATE_MACRO_RE = /\$\{__(from|to):date:([Hms])\}/g
+const GRAFANA_DATE_MACRO_RE = /\$\{__(from|to):date:([Hms]+)\}/g
 
 function parseSampleValue(value: string): number {
   switch (value) {
@@ -26,20 +26,24 @@ function parseSampleValue(value: string): number {
 
 function formatGrafanaDateMacro(
   macro: 'from' | 'to',
-  datePart: 'H' | 'm' | 's',
+  dateFormat: string,
   options: QueryOptions
 ): string {
   const timestampSec = macro === 'from' ? options.start : options.end
   const date = new Date(timestampSec * 1000)
 
-  switch (datePart) {
-    case 'H':
-      return `${date.getHours()}`
-    case 'm':
-      return `${date.getMinutes()}`
-    case 's':
-      return `${date.getSeconds()}`
-  }
+  return dateFormat.replace(/H+|m+|s+/g, token => {
+    const value =
+      token[0] === 'H'
+        ? date.getHours()
+        : token[0] === 'm'
+        ? date.getMinutes()
+        : date.getSeconds()
+
+    return token.length === 1
+      ? `${value}`
+      : `${value}`.padStart(token.length, '0')
+  })
 }
 
 export function processRawData(
