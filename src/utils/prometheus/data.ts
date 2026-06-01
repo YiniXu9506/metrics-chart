@@ -11,6 +11,8 @@ import { DataPoint, QueryOptions } from '../../MetricChart/interfaces'
 const POSITIVE_INFINITY_SAMPLE_VALUE = '+Inf'
 const NEGATIVE_INFINITY_SAMPLE_VALUE = '-Inf'
 
+const GRAFANA_DATE_MACRO_RE = /\$\{__(from|to):date:([Hms])\}/g
+
 function parseSampleValue(value: string): number {
   switch (value) {
     case POSITIVE_INFINITY_SAMPLE_VALUE:
@@ -19,6 +21,24 @@ function parseSampleValue(value: string): number {
       return Number.NEGATIVE_INFINITY
     default:
       return parseFloat(value)
+  }
+}
+
+function formatGrafanaDateMacro(
+  macro: 'from' | 'to',
+  datePart: 'H' | 'm' | 's',
+  options: QueryOptions
+): string {
+  const timestampSec = macro === 'from' ? options.start : options.end
+  const date = new Date(timestampSec * 1000)
+
+  switch (datePart) {
+    case 'H':
+      return `${date.getHours()}`
+    case 'm':
+      return `${date.getMinutes()}`
+    case 's':
+      return `${date.getSeconds()}`
   }
 }
 
@@ -64,6 +84,9 @@ export function resolveQueryTemplate(
   const rateInterval = `${Math.max(options.step, 4 * DEFAULT_MIN_INTERVAL_SEC)}s`
 
   return template
+    .replace(GRAFANA_DATE_MACRO_RE, (_, macro, datePart) =>
+      formatGrafanaDateMacro(macro, datePart, options)
+    )
     .replace(/\$__rate_interval/g, rateInterval)
     .replace(/\$__range_ms/g, `${rangeSec * 1000}`)
     .replace(/\$__range_s/g, `${rangeSec}`)
